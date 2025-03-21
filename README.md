@@ -1,6 +1,6 @@
 # FastAPI Backend
 
-A well-structured FastAPI backend for the onboarding project.
+A FastAPI backend for the main project.
 
 ## Features
 
