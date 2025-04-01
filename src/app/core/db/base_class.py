@@ -1,10 +1,13 @@
+from sqlalchemy import String
+from sqlalchemy.types import DateTime
+
 """SQLAlchemy base class module."""
 
 import uuid
 from datetime import datetime
-from typing import Any, Dict, TypeVar
+from typing import Any, Dict, TypeVar  # noqa: F401
 
-from sqlalchemy import Column, DateTime, String
+from sqlalchemy import Column  # noqa: F401, DateTime, String
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 

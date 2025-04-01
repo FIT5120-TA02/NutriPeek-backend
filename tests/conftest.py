@@ -9,7 +9,7 @@ from httpx import AsyncClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from src.app.core.config import settings
+from src.app.core.config import settings  # noqa: F401
 from src.app.core.db.base_class import Base
 from src.app.core.db.session import get_db
 from src.app.core.setup import create_app

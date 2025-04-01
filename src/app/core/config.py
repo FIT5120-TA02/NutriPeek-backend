@@ -1,7 +1,7 @@
 """Application configuration module."""
 
 import logging
-from pathlib import Path
+from pathlib import Path  # noqa: F401
 from typing import Any, Dict, List, Optional
 
 from pydantic import field_validator
