@@ -39,6 +39,7 @@ def test_engine():
     """
     engine = create_engine(
         TEST_DATABASE_URL,
+	connect_args={"check_same_thread": False},
         echo=False,
         future=True,
     )

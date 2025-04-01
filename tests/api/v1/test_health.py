@@ -11,7 +11,7 @@ async def test_health_check(client: AsyncClient) -> None:
     Args:
         client: Test client.
     """
-    response = await client.get("/api/v1/health")
+    response = await client.get("/api/v1/health", follow_redirects=True)
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "healthy"
