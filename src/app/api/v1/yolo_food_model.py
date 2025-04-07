@@ -36,4 +36,3 @@ async def predict_food(file: UploadFile = File(...)):
     return {
         "predictions": predictions
     }
-    
