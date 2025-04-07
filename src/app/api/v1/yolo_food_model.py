@@ -28,10 +28,11 @@ async def predict_food(file: UploadFile = File(...)):
         shutil.copyfileobj(file.file, buffer)
 
     # Predict
-    predictions = predict(temp_path)
-
-    # Clean up temp file
-    os.remove(temp_path)
+    try:
+        predictions = predict(temp_path)
+        return {"predictions": predictions}
+    finally:
+        os.remove(temp_path)
 
     return {
         "predictions": predictions
