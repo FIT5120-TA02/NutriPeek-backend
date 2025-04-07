@@ -6,7 +6,9 @@ from typing import List
 model_path = Path(__file__).resolve().parent.parent / "models" / "yolov8n-cls.pt"
 model = YOLO(str(model_path))
 
+
 def predict(image_path: str) -> List[str]:
+
     """
     Predict the food items from the input image.
 

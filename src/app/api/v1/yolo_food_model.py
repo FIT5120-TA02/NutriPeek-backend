@@ -13,6 +13,7 @@ UPLOAD_DIR = "uploads"  # Define upload directory
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+
 @router.post("/predict")
 async def predict_food(file: UploadFile = File(...)):
     """
@@ -35,4 +36,4 @@ async def predict_food(file: UploadFile = File(...)):
     return {
         "predictions": predictions
     }
-
+    
