@@ -13,3 +13,5 @@ black==23.10.1
 isort==5.12.0
 flake8==6.1.0
 mypy==1.6.1
+ultralytics==8.0.190
+python-multipart==0.0.6
