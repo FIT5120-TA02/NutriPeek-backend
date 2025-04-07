@@ -21,6 +21,7 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
+.python-version
 
 # Environment variables
 
@@ -51,3 +52,6 @@ htmlcov/
 Thumbs.db
 
 .cursor/
+
+# Uploaded images
+uploads/
