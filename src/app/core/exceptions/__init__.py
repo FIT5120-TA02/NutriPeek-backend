@@ -7,6 +7,11 @@ from src.app.core.exceptions.base import (
     NotFoundError,
     ValidationError,
 )
+from src.app.core.exceptions.custom import (
+    InvalidImageError,
+    ModelLoadError,
+    ProcessingError,
+)
 
 __all__ = [
     "ApplicationError",
@@ -14,4 +19,7 @@ __all__ = [
     "AuthorizationError",
     "NotFoundError",
     "ValidationError",
+    "InvalidImageError",
+    "ModelLoadError",
+    "ProcessingError",
 ]

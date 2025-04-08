@@ -22,28 +22,36 @@
             }
         },
         {
-            "name": "Python: Current File",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal",
-            "justMyCode": true,
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
-        },
-        {
-            "name": "FastAPI: Debug Tests",
+            "name": "Tests: Run All Tests",
             "type": "debugpy",
             "request": "launch",
             "module": "pytest",
             "args": [
-                "${file}"
+                "-v",
+                "--asyncio-mode=auto"
             ],
+            "console": "integratedTerminal",
             "justMyCode": false,
             "env": {
                 "PYTHONPATH": "${workspaceFolder}"
-            }
+            },
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Script: Test YOLO Model",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/scripts/python/test_yolo_model.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "--input",
+                "~/Downloads/test1.jpg",
+            ],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "cwd": "${workspaceFolder}"
         }
     ]
 }
