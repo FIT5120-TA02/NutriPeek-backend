@@ -53,6 +53,7 @@ pydantic-settings==2.0.3
 pydantic_core==2.23.4
 pyflakes==3.1.0
 pyparsing==3.2.3
+pypng==0.20220715.0
 pytest==7.4.3
 pytest-asyncio==0.21.1
 python-dateutil==2.9.0.post0
@@ -60,6 +61,7 @@ python-dotenv==1.0.0
 python-multipart==0.0.6
 pytz==2025.2
 PyYAML==6.0.2
+qrcode==7.4.2
 requests==2.32.3
 scipy==1.15.2
 seaborn==0.13.2
@@ -80,5 +82,3 @@ ultralytics==8.3.104
 ultralytics-thop==2.0.14
 urllib3==2.3.0
 uvicorn==0.23.2
-qrcode==7.4.2
-
