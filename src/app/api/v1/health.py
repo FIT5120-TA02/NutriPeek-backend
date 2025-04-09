@@ -13,7 +13,7 @@ from src.app.core.config import settings
 from src.app.core.db.session import get_db
 from src.app.schemas.health import HealthCheckResponse
 
-router = APIRouter(tags=["health"])
+router = APIRouter(prefix="/health", tags=["health"])
 logger = logging.getLogger(__name__)
 
 

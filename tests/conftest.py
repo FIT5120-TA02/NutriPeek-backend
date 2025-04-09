@@ -5,7 +5,7 @@ from typing import AsyncGenerator, Generator
 
 import pytest
 from fastapi import FastAPI
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -110,5 +110,7 @@ async def client(app) -> AsyncGenerator[AsyncClient, None]:
     Yields:
         Test client.
     """
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
         yield client

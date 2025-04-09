@@ -14,7 +14,6 @@ from sqlalchemy.exc import SQLAlchemyError
 # Import all models to ensure they are registered with SQLAlchemy
 from src.app.core.config import settings
 from src.app.core.db.base import Base
-from src.app.core.db.session import db_manager
 
 # Add the project root to the Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))

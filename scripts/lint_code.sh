@@ -1,9 +1,9 @@
 #!/bin/bash
 echo "Running black..."
-black src/
+black src/ scripts/
 
 echo "Running flake8..."
-flake8 src/
+flake8 src/ scripts/
 
 echo "Running mypy..."
-mypy src/
+mypy src/ scripts/
