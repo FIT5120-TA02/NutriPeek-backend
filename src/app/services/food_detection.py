@@ -23,7 +23,9 @@ class FoodDetectionService:
     DEFAULT_MODEL = "yolo11n.pt"
 
     def __init__(
-        self, model_name: Optional[str] = None, confidence_threshold: float = 0.35
+        self,
+        model_name: Optional[str] = None,
+        confidence_threshold: float = 0.35,
     ):
         """Initialize the food detection service.
 
@@ -32,14 +34,11 @@ class FoodDetectionService:
                         If None, uses the default model.
             confidence_threshold: Minimum confidence threshold for detections (0-1).
         """
-        # Ensure models directory exists
         self.MODEL_BASE_DIR.mkdir(parents=True, exist_ok=True)
 
-        # Use specified model or default
         model_filename = model_name if model_name else self.DEFAULT_MODEL
         self.model_path = self.MODEL_BASE_DIR / model_filename
 
-        # Store configuration
         self._model = None
         self._confidence_threshold = confidence_threshold
         self._model_name = model_filename
@@ -55,7 +54,6 @@ class FoodDetectionService:
                 self._model = YOLO(str(self.model_path))
             except Exception as e:
                 raise ModelLoadError(f"Failed to load YOLO model: {str(e)}")
-
         return self._model
 
     @property
@@ -144,3 +142,8 @@ class FoodDetectionService:
 
 # Create a singleton instance with default settings
 food_detection_service = FoodDetectionService()
+
+
+async def detect_image(image_file: UploadFile) -> Tuple[List[FoodItemDetection], float, int, int]:
+    """Convenience function to call food detection service."""
+    return await food_detection_service.process_image(image_file)
