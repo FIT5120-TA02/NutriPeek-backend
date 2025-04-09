@@ -6,6 +6,7 @@ import uuid
 from io import BytesIO
 from src.app.core.temp_storage import temp_storage
 
+
 def generate_upload_qr(base_url: str):
     """Generate short link QR code"""
     shortcode = str(uuid.uuid4())[:8]
@@ -21,7 +22,8 @@ def generate_upload_qr(base_url: str):
 def auto_delete_shortcode(shortcode: str, delay: int = 300):
     """Auto delete the shortcode after a delay (default 5 minutes)"""
     time.sleep(delay)
-    temp_storage.delete_entry(shortcode)
+    if temp_storage.exists(shortcode):
+        temp_storage.delete_entry(shortcode)
 
 
 def save_uploaded_file(shortcode: str, file_data: bytes):

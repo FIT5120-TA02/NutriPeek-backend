@@ -22,6 +22,10 @@ class TempStorage:
         """Delete shortcode record"""
         if shortcode in self._storage:
             del self._storage[shortcode]
+    
+    def exists(self, shortcode: str) -> bool:
+        """Check if shortcode exists"""
+        return shortcode in self._storage
 
 
 # Create a global singleton instance
