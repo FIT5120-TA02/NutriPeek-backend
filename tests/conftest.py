@@ -9,13 +9,10 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from src.app.core.config import settings  # noqa: F401
+from src.app.core.config import settings
 from src.app.core.db.base_class import Base
 from src.app.core.db.session import get_db
 from src.app.core.setup import create_app
-
-# Use an in-memory SQLite database for testing
-TEST_DATABASE_URL = "sqlite:///:memory:"
 
 
 @pytest.fixture(scope="session")
@@ -38,7 +35,7 @@ def test_engine():
         Test database engine.
     """
     engine = create_engine(
-        TEST_DATABASE_URL,
+        settings.DATABASE_URL,
         connect_args={"check_same_thread": False},
         echo=False,
         future=True,

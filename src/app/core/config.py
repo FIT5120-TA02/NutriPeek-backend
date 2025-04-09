@@ -1,8 +1,7 @@
 """Application configuration module."""
 
 import logging
-from pathlib import Path  # noqa: F401
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -24,7 +23,6 @@ class Settings(BaseSettings):
         DEBUG: Debug mode flag.
         ENVIRONMENT: Environment name (development, staging, production).
         DATABASE_URL: Database connection string.
-        ALLOWED_HOSTS: List of allowed hosts.
         LOG_LEVEL: Logging level.
     """
 
@@ -37,9 +35,6 @@ class Settings(BaseSettings):
 
     # Database settings
     DATABASE_URL: Optional[str] = None
-
-    # CORS settings
-    ALLOWED_HOSTS: List[str] = ["*"]
 
     # Set model_config to use the appropriate env file
     model_config = SettingsConfigDict(
@@ -88,7 +83,16 @@ class Settings(BaseSettings):
 settings = Settings()
 
 # Log settings information - useful for debugging
-logger.setLevel(getattr(logging, settings.LOG_LEVEL))
+# Set default log level to INFO if LOG_LEVEL is empty or invalid
+log_level = "INFO"
+if settings.LOG_LEVEL:
+    log_level = settings.LOG_LEVEL.upper()
+    # Validate the log level
+    if log_level not in ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"):
+        logger.warning(f"Invalid LOG_LEVEL: {log_level}, defaulting to INFO")
+        log_level = "INFO"
+
+logger.setLevel(getattr(logging, log_level))
 logger.info(f"Loaded settings for environment: {settings.ENVIRONMENT}")
 # Mask sensitive parts of the database URL
 if settings.DATABASE_URL:
