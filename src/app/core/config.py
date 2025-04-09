@@ -23,12 +23,8 @@ class Settings(BaseSettings):
         APP_VERSION: Version of the application.
         DEBUG: Debug mode flag.
         ENVIRONMENT: Environment name (development, staging, production).
-        SECRET_KEY: Secret key for security.
-        ACCESS_TOKEN_EXPIRE_MINUTES: Token expiration time in minutes.
         DATABASE_URL: Database connection string.
         ALLOWED_HOSTS: List of allowed hosts.
-        OPENWEATHERMAP_API_KEY: API key for OpenWeatherMap service.
-        GOOGLE_MAPS_API_KEY: API key for Google Maps service.
         LOG_LEVEL: Logging level.
     """
 
@@ -38,10 +34,6 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     ENVIRONMENT: str = "local"
     LOG_LEVEL: str = "INFO"
-
-    # Security settings
-    SECRET_KEY: str = "your-secret-key-for-development-only"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
     # Database settings
     DATABASE_URL: Optional[str] = None

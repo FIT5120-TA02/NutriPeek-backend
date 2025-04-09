@@ -52,6 +52,34 @@
                 "PYTHONPATH": "${workspaceFolder}"
             },
             "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Script: Populate Daily Nutrient Intake",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "scripts.python.populate_daily_nutrient_intake",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "envFile": "${workspaceFolder}/env/dev.env",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Script: Populate Food Nutrient",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "scripts.python.populate_food_nutrient",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "envFile": "${workspaceFolder}/env/dev.env",
+            "cwd": "${workspaceFolder}"
         }
     ]
 }
