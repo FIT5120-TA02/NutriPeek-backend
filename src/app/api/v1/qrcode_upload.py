@@ -25,7 +25,7 @@ def get_result(shortcode: str):
     file_data = qrcode_upload.temp_storage.get_file(shortcode)
     if not file_data:
         raise HTTPException(status_code=404, detail="Shortcode not found or expired")
-  
+
     label, confidence = qrcode_upload.detect_image(file_data)
     qrcode_upload.temp_storage.delete_entry(shortcode)  # One-time use, delete after use
     return DetectionResultResponse(label=label, confidence=confidence)
