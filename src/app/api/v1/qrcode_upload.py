@@ -1,6 +1,7 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Request
 from src.app.services import qrcode_upload
 from src.app.schemas.qrcode_upload import GenerateUploadQRResponse, UploadImageResponse, DetectionResultResponse
+from src.app.services.food_detection import detect_image
 
 router = APIRouter()
 
@@ -26,6 +27,6 @@ def get_result(shortcode: str):
     if not file_data:
         raise HTTPException(status_code=404, detail="Shortcode not found or expired")
 
-    label, confidence = qrcode_upload.detect_image(file_data)
+    label, confidence = detect_image(file_data)
     qrcode_upload.temp_storage.delete_entry(shortcode)  # One-time use, delete after use
     return DetectionResultResponse(label=label, confidence=confidence)
