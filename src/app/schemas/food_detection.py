@@ -1,6 +1,6 @@
 """Schemas for food detection API."""
 
-from typing import List
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -42,3 +42,49 @@ class FoodDetectionError(BaseModel):
     """Schema for food detection errors."""
 
     detail: str
+
+
+class FoodNutrientSummary(BaseModel):
+    """Summary schema for food nutrient data."""
+
+    id: str
+    food_name: str
+    food_category: Optional[str] = None
+    energy_with_fibre_kj: Optional[float] = None
+    protein_g: Optional[float] = None
+    total_fat_g: Optional[float] = None
+    carbs_with_sugar_alcohols_g: Optional[float] = None
+    dietary_fibre_g: Optional[float] = None
+
+    class ConfigDict:
+        """Pydantic configuration."""
+
+        from_attributes = True
+
+
+class FoodMappingRequest(BaseModel):
+    """Request schema for mapping detected food items to nutrient data."""
+
+    detected_items: List[str] = Field(
+        ..., description="List of food item class names to map to nutrient data"
+    )
+    children_profile_id: Optional[str] = Field(
+        None,
+        description="Profile ID for associating with inventory (if storing results)",
+    )
+    store_in_inventory: bool = Field(
+        False, description="Whether to store the results in the inventory"
+    )
+
+
+class FoodMappingResponse(BaseModel):
+    """Response schema for food mapping."""
+
+    mapped_items: Dict[str, FoodNutrientSummary] = Field(
+        default_factory=dict,
+        description="Mapping of detected food item names to nutrient data",
+    )
+    unmapped_items: List[str] = Field(
+        default_factory=list,
+        description="List of food items that couldn't be mapped to nutrient data",
+    )

@@ -1,34 +1,35 @@
 #!/usr/bin/env python
-"""Script to populate food_nutrient table from XLSX file.
+"""Async script to populate food_nutrient table from XLSX file.
 
 This script reads data from the Food_Nutrient_Details.xlsx file and inserts
-it into the food_nutrient table in the database.
+it into the food_nutrient table in the database using async operations.
 
 Example usage:
-    python -m scripts.python.populate_food_nutrient
+    python -m scripts.python.async_populate_food_nutrient
 
 Dependencies:
     - pandas
     - sqlalchemy
     - openpyxl
+    - asyncpg
 """
 
 import argparse
+import asyncio
 import os
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional
 
 import pandas as pd
-from sqlalchemy.exc import SQLAlchemyError
 
 # Add the project root to the Python path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from src.app.core.config import settings  # noqa: E402
+from src.app.core.db.async_session import get_async_session  # noqa: E402
 from src.app.core.logger import get_logger  # noqa: E402
-from src.app.core.session import db_manager  # noqa: E402
 from src.app.models.food_nutrient import FoodNutrient  # noqa: E402
 
 # Configure logger
@@ -62,6 +63,18 @@ def transform_data(df: pd.DataFrame) -> List[Dict]:
     Returns:
         A list of dictionaries representing rows for the food_nutrient table.
     """
+    # Log all columns in the Excel file
+    logger.info(f"Columns in Excel file: {list(df.columns)}")
+
+    # Drop the "Food ID" and "Survey ID" columns if they exist
+    columns_to_drop = ["Food ID", "Survey ID"]
+    for col in columns_to_drop:
+        if col in df.columns:
+            df = df.drop(columns=[col])
+            logger.info(f"Dropped column: {col}")
+        else:
+            logger.warning(f"Column '{col}' not found in Excel file, could not drop it")
+
     # Map Excel columns to model fields
     # This mapping should be adjusted based on the actual Excel column names
     column_mapping = {
@@ -134,17 +147,27 @@ def transform_data(df: pd.DataFrame) -> List[Dict]:
         logger.error(f"Required column '{required_column}' not found in Excel file")
         return []
 
-    # Handle potential NaN values and convert to appropriate types
-    # Convert numeric columns to float
-    numeric_columns = [
-        col
-        for col in renamed_df.columns
-        if col != "food_name" and col != "food_category" and col != "food_detail"
-    ]
+    # Identify text and numeric columns
+    text_columns = ["food_name", "food_category", "food_detail"]
+    numeric_columns = [col for col in renamed_df.columns if col not in text_columns]
 
+    # Handle text columns - convert to lowercase and replace NaN with None
+    for col in text_columns:
+        if col in renamed_df.columns:
+            # First convert NaN to empty string to avoid error when calling str.lower()
+            renamed_df[col] = renamed_df[col].fillna("")
+            # Then convert to lowercase
+            renamed_df[col] = renamed_df[col].str.lower()
+            # Replace empty string back to None
+            renamed_df[col] = renamed_df[col].replace("", None)
+            logger.info(f"Converted {col} to lowercase and handled NaN values")
+
+    # Handle numeric columns - convert to appropriate numeric type and NaN to None
     for col in numeric_columns:
         if col in renamed_df.columns:
             renamed_df[col] = pd.to_numeric(renamed_df[col], errors="coerce")
+            # Replace NaN with None for proper SQL NULL values
+            renamed_df[col] = renamed_df[col].where(pd.notna(renamed_df[col]), None)
 
     # Convert DataFrame to list of dictionaries
     rows = renamed_df.to_dict(orient="records")
@@ -153,35 +176,105 @@ def transform_data(df: pd.DataFrame) -> List[Dict]:
     return rows
 
 
-def insert_data(data: List[Dict]) -> int:
-    """Insert data into the food_nutrient table.
+def validate_row(row: Dict, index: int) -> bool:
+    """Validate a row before insertion.
+
+    Args:
+        row: The row data to validate
+        index: The index of the row for error reporting
+
+    Returns:
+        True if valid, False otherwise
+    """
+    # Check for any NaN values that might have been missed
+    for key, value in row.items():
+        if pd.isna(value):
+            logger.error(
+                f"Row {index}: Field '{key}' has NaN value. All NaN values should be converted to None."
+            )
+            return False
+
+    # Check required fields
+    if not row.get("food_name"):
+        logger.error(f"Row {index}: Missing required field 'food_name'")
+        return False
+
+    # Validate string fields
+    string_fields = ["food_name", "food_category", "food_detail"]
+    for field in string_fields:
+        if field in row and row[field] is not None and not isinstance(row[field], str):
+            logger.error(
+                f"Row {index}: Field '{field}' should be a string, got {type(row[field])}"
+            )
+            return False
+
+    # Validate float fields
+    float_fields = [key for key in row.keys() if key not in string_fields]
+    for field in float_fields:
+        if (
+            field in row
+            and row[field] is not None
+            and not isinstance(row[field], (int, float))
+        ):
+            logger.error(
+                f"Row {index}: Field '{field}' should be a number, got {type(row[field])}"
+            )
+            return False
+
+    return True
+
+
+async def insert_data(data: List[Dict], batch_size: int = 100) -> int:
+    """Insert data into the food_nutrient table using async operations.
 
     Args:
         data: List of dictionaries containing the data to insert.
+        batch_size: Number of rows to insert in each batch.
 
     Returns:
         Number of rows inserted.
     """
     inserted_count = 0
-    batch_size = 100
+    failed_batches = 0
+    max_failed_batches = 3  # Stop after 3 consecutive failed batches
 
     # Process in batches to avoid memory issues with large datasets
     for i in range(0, len(data), batch_size):
         batch = data[i : i + batch_size]
-        batch_inserted = insert_batch(batch)
+        logger.info(
+            f"Processing batch {i//batch_size + 1} of {(len(data) + batch_size - 1) // batch_size} ({len(batch)} rows)"
+        )
+
+        batch_inserted = await insert_batch(batch)
 
         if batch_inserted == 0:  # Error occurred
-            return inserted_count
+            failed_batches += 1
+            logger.warning(
+                f"Batch {i//batch_size + 1} failed. Failed batches: {failed_batches}/{max_failed_batches}"
+            )
+            if failed_batches >= max_failed_batches:
+                logger.error(
+                    f"Reached maximum failed batches ({max_failed_batches}). Stopping import."
+                )
+                break
+        else:
+            # Reset failed batches count if a batch succeeds
+            failed_batches = 0
+            inserted_count += batch_inserted
+            logger.info(
+                f"Committed batch. Total rows inserted so far: {inserted_count}"
+            )
 
-        inserted_count += batch_inserted
-        logger.info(f"Committed batch. Total rows inserted so far: {inserted_count}")
+    if inserted_count > 0:
+        logger.info(f"Successfully inserted {inserted_count} rows")
+    else:
+        logger.error("No rows were inserted. Check logs for errors.")
 
-    logger.info(f"Successfully inserted {inserted_count} rows")
     return inserted_count
 
 
-def insert_batch(batch: List[Dict]) -> int:
-    """Insert a batch of data into the food_nutrient table.
+async def insert_batch(batch: List[Dict]) -> int:
+    """Insert a batch of data into the food_nutrient table using async session.
 
     Args:
         batch: List of dictionaries containing the data to insert.
@@ -191,42 +284,70 @@ def insert_batch(batch: List[Dict]) -> int:
     """
     batch_inserted = 0
 
-    with db_manager.session() as session:
+    # Validate all rows before attempting to insert
+    validated_batch = []
+    for i, row in enumerate(batch):
+        if validate_row(row, i):
+            validated_batch.append(row)
+        else:
+            logger.warning(f"Skipping invalid row at index {i}")
+
+    if not validated_batch:
+        logger.error("No valid rows to insert in this batch")
+        return 0
+
+    logger.info(f"Validated {len(validated_batch)} of {len(batch)} rows")
+
+    async with get_async_session() as session:
         try:
             # Begin a transaction
-            session.begin()
+            async with session.begin():
+                for i, row in enumerate(validated_batch):
+                    try:
+                        # Create a new FoodNutrient object
+                        food_nutrient = FoodNutrient()
 
-            for row in batch:
-                # Create a new FoodNutrient object
-                # Only include keys that exist in the model
-                food_nutrient = FoodNutrient()
+                        # Set attributes dynamically
+                        for key, value in row.items():
+                            if hasattr(food_nutrient, key):
+                                setattr(food_nutrient, key, value)
 
-                # Set attributes dynamically
-                for key, value in row.items():
-                    if hasattr(food_nutrient, key):
-                        setattr(food_nutrient, key, value)
+                        # Add to session
+                        session.add(food_nutrient)
+                        batch_inserted += 1
+                    except Exception as row_error:
+                        # Log which row failed and why, but continue with other rows
+                        logger.error(f"Error inserting row {i}: {row_error}")
+                        logger.debug(f"Problem row: {row}")
+                        raise  # Re-raise to trigger the outer exception handler for transaction rollback
 
-                # Add to session
-                session.add(food_nutrient)
-                batch_inserted += 1
+            # Session is committed automatically when exiting the context
+            logger.info(f"Successfully inserted batch of {batch_inserted} rows")
+        except Exception as e:
+            logger.error(f"Error inserting batch: {str(e)}")
+            # Add more detailed diagnostics
+            if "DataError" in str(e) and "nan" in str(e):
+                logger.error(
+                    "NaN values detected in the data. Make sure all NaN values are properly converted to None."
+                )
 
-            # Commit the batch
-            session.commit()
-
-        except SQLAlchemyError as e:
-            session.rollback()
-            logger.error(f"Error inserting batch: {e}")
+            # Session is rolled back automatically on exception
             batch_inserted = 0
 
     return batch_inserted
 
 
-def main(excel_path: Optional[str] = None, database_url: Optional[str] = None):
-    """Main function to execute the data import process.
+async def main(
+    excel_path: Optional[str] = None,
+    database_url: Optional[str] = None,
+    batch_size: int = 100,
+):
+    """Main function to execute the data import process asynchronously.
 
     Args:
         excel_path: Path to the Excel file. If None, uses default path.
         database_url: Database URL. If None, uses settings.DATABASE_URI.
+        batch_size: Number of rows to insert in each batch.
     """
     # Default excel path is at the project root
     if excel_path is None:
@@ -237,34 +358,45 @@ def main(excel_path: Optional[str] = None, database_url: Optional[str] = None):
         logger.error(f"Excel file not found at {excel_path}")
         return
 
-    # Initialize database connection
+    # Override database URL in settings if provided
     if database_url:
-        # Override database URL in settings if provided
-        settings.DATABASE_URI = database_url
+        settings.DATABASE_URL = database_url
 
-    if not db_manager.initialize():
-        logger.error("Failed to initialize database connection")
-        return
+    # Validate batch size
+    if batch_size <= 0:
+        logger.warning(f"Invalid batch_size ({batch_size}), using default of 100")
+        batch_size = 100
 
-    # Read data from Excel
+    # Read data from Excel (this is a synchronous operation)
+    logger.info(f"Reading Excel file: {excel_path}")
     df = read_excel_file(excel_path)
     if df is None:
         return
 
-    # Transform data
+    # Transform data (this is a synchronous operation)
+    logger.info("Transforming data...")
     transformed_data = transform_data(df)
     if not transformed_data:
+        logger.error("No data to insert after transformation")
         return
 
-    # Insert data
-    inserted_count = insert_data(transformed_data)
+    logger.info(f"Prepared {len(transformed_data)} rows for insertion")
+    logger.info(f"Using batch size of {batch_size}")
 
-    logger.info(f"Data import completed. Inserted {inserted_count} records.")
+    try:
+        # Insert data (this is an asynchronous operation)
+        inserted_count = await insert_data(transformed_data, batch_size)
+        logger.info(f"Data import completed. Inserted {inserted_count} records.")
+    except Exception as e:
+        logger.error(f"Failed to import data: {str(e)}")
+        import traceback
+
+        logger.debug(traceback.format_exc())
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Import data from Excel to food_nutrient table"
+        description="Import data from Excel to food_nutrient table (async version)"
     )
     parser.add_argument(
         "--excel-path",
@@ -274,7 +406,19 @@ if __name__ == "__main__":
     parser.add_argument(
         "--database-url", type=str, help="Database URL (default: from settings)"
     )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=100,
+        help="Number of rows to insert in each batch (default: 100)",
+    )
 
     args = parser.parse_args()
 
-    main(excel_path=args.excel_path, database_url=args.database_url)
+    asyncio.run(
+        main(
+            excel_path=args.excel_path,
+            database_url=args.database_url,
+            batch_size=args.batch_size,
+        )
+    )

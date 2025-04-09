@@ -11,9 +11,11 @@ Dependencies:
     - pandas
     - sqlalchemy
     - openpyxl
+    - asyncio
 """
 
 import argparse
+import asyncio
 import os
 import re
 import sys
@@ -28,8 +30,8 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from src.app.core.config import settings  # noqa: E402
+from src.app.core.db.async_session import get_async_session  # noqa: E402
 from src.app.core.logger import get_logger  # noqa: E402
-from src.app.core.session import db_manager  # noqa: E402
 from src.app.models.daily_nutrient_intake import DailyNutrientIntake  # noqa: E402
 
 # Configure logger
@@ -175,8 +177,8 @@ def transform_data(df: pd.DataFrame) -> List[Dict]:
     return expanded_rows
 
 
-def insert_data(data: List[Dict]) -> int:
-    """Insert data into the daily_nutrient_intake table.
+async def insert_data(data: List[Dict]) -> int:
+    """Insert data into the daily_nutrient_intake table using async session.
 
     Args:
         data: List of dictionaries containing the data to insert.
@@ -186,40 +188,46 @@ def insert_data(data: List[Dict]) -> int:
     """
     inserted_count = 0
 
-    with db_manager.session() as session:
-        try:
-            # Begin a transaction
-            session.begin()
+    try:
+        async with get_async_session() as session:
+            try:
+                # Begin a transaction
+                # Create DailyNutrientIntake objects for each row
+                for row in data:
+                    # Create a new DailyNutrientIntake object
+                    daily_nutrient = DailyNutrientIntake(
+                        nutrient=row["nutrient"],
+                        unit=row["unit"],
+                        age=row["age"],
+                        gender=row["gender"],
+                        intake=row["intake"],
+                        category=row.get("category"),
+                    )
 
-            for row in data:
-                # Create a new DailyNutrientIntake object
-                daily_nutrient = DailyNutrientIntake(
-                    nutrient=row["nutrient"],
-                    unit=row["unit"],
-                    age=row["age"],
-                    gender=row["gender"],
-                    intake=row["intake"],
-                    category=row.get("category"),
-                )
+                    # Add to session
+                    session.add(daily_nutrient)
+                    inserted_count += 1
 
-                # Add to session
-                session.add(daily_nutrient)
-                inserted_count += 1
+                # Commit the transaction
+                await session.commit()
+                logger.info(f"Successfully inserted {inserted_count} rows")
 
-            # Commit the transaction
-            session.commit()
-            logger.info(f"Successfully inserted {inserted_count} rows")
+            except SQLAlchemyError as e:
+                await session.rollback()
+                logger.error(f"Error inserting data: {e}")
+                inserted_count = 0
 
-        except SQLAlchemyError as e:
-            session.rollback()
-            logger.error(f"Error inserting data: {e}")
-            inserted_count = 0
+    except Exception as e:
+        logger.error(f"Error with database session: {e}")
+        inserted_count = 0
 
     return inserted_count
 
 
-def main(excel_path: Optional[str] = None, database_url: Optional[str] = None):
-    """Main function to execute the data import process.
+async def main_async(
+    excel_path: Optional[str] = None, database_url: Optional[str] = None
+):
+    """Async main function to execute the data import process.
 
     Args:
         excel_path: Path to the Excel file. If None, uses default path.
@@ -234,29 +242,29 @@ def main(excel_path: Optional[str] = None, database_url: Optional[str] = None):
         logger.error(f"Excel file not found at {excel_path}")
         return
 
-    # Initialize database connection
+    # Override database URL in settings if provided
     if database_url:
-        # Override database URL in settings if provided
-        settings.DATABASE_URI = database_url
+        settings.DATABASE_URL = database_url
 
-    if not db_manager.initialize():
-        logger.error("Failed to initialize database connection")
-        return
-
-    # Read data from Excel
+    # Read data from Excel (this is synchronous)
     df = read_excel_file(excel_path)
     if df is None:
         return
 
-    # Transform data
+    # Transform data (this is synchronous)
     transformed_data = transform_data(df)
     if not transformed_data:
         return
 
-    # Insert data
-    inserted_count = insert_data(transformed_data)
+    # Insert data (this is now async)
+    inserted_count = await insert_data(transformed_data)
 
     logger.info(f"Data import completed. Inserted {inserted_count} records.")
+
+
+def main(excel_path: Optional[str] = None, database_url: Optional[str] = None):
+    """Main function that runs the async main function."""
+    asyncio.run(main_async(excel_path, database_url))
 
 
 if __name__ == "__main__":

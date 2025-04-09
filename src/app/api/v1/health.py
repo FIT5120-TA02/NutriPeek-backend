@@ -7,10 +7,10 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy import text
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.app.core.config import settings
-from src.app.core.db.session import get_db
+from src.app.core.db.async_session import get_async_db
 from src.app.schemas.health import HealthCheckResponse
 
 router = APIRouter(prefix="/health", tags=["health"])
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
     summary="Health check",
     description="Check the health of the application and its dependencies.",
 )
-def health_check(db: Session = Depends(get_db)) -> HealthCheckResponse:
+async def health_check(db: AsyncSession = Depends(get_async_db)) -> HealthCheckResponse:
     """Check the health of the application and its dependencies.
 
     Args:
@@ -40,7 +40,7 @@ def health_check(db: Session = Depends(get_db)) -> HealthCheckResponse:
     db_message = "Connected successfully"
     try:
         # Execute a simple query to check database connection
-        db.execute(text("SELECT 1"))
+        await db.execute(text("SELECT 1"))
         logger.info("Database health check passed")
     except Exception as e:
         db_status = "unhealthy"
@@ -75,7 +75,7 @@ def health_check(db: Session = Depends(get_db)) -> HealthCheckResponse:
     summary="Simple health check",
     description="Simple health check that doesn't require a database connection.",
 )
-def ping() -> dict:
+async def ping() -> dict:
     """Simple health check that doesn't require a database connection.
 
     Returns:
