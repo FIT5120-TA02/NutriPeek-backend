@@ -4,6 +4,7 @@ import uuid
 from io import BytesIO
 from src.app.core.temp_storage import temp_storage
 
+
 def generate_upload_qr(base_url: str):
     """Generate short link QR code"""
     shortcode = str(uuid.uuid4())[:8]  # Get the first 8 characters as shortcode

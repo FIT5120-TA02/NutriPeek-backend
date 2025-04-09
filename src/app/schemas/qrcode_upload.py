@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+
 class GenerateUploadQRResponse(BaseModel):
     upload_url: str
     qrcode_base64: str
