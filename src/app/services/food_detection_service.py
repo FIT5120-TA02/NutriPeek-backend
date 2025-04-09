@@ -142,8 +142,3 @@ class FoodDetectionService:
 
 # Create a singleton instance with default settings
 food_detection_service = FoodDetectionService()
-
-
-async def detect_image(image_file: UploadFile) -> Tuple[List[FoodItemDetection], float, int, int]:
-    """Convenience function to call food detection service."""
-    return await food_detection_service.process_image(image_file)

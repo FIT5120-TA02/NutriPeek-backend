@@ -17,11 +17,7 @@ from src.app.schemas.nutrient import (
     NutrientGapResponse,
     NutrientInfo,
 )
-from src.app.schemas.qrcode_upload import (
-    DetectionResultResponse,
-    GenerateUploadQRResponse,
-    UploadImageResponse,
-)
+from src.app.schemas.qrcode import GenerateUploadQRResponse, UploadImageResponse
 
 __all__ = [
     "HealthCheckResponse",
@@ -40,7 +36,6 @@ __all__ = [
     "NutrientGapRequest",
     "NutrientGapResponse",
     "NutrientInfo",
-    "DetectionResultResponse",
     "GenerateUploadQRResponse",
     "UploadImageResponse",
 ]

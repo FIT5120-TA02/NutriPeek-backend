@@ -16,7 +16,7 @@ from src.app.schemas.food_detection import (
     FoodMappingRequest,
     FoodMappingResponse,
 )
-from src.app.services.food_detection import food_detection_service
+from src.app.services.food_detection_service import food_detection_service
 from src.app.services.food_mapping_service import food_mapping_service
 
 router = APIRouter(prefix="/food-detection", tags=["food-detection"])

@@ -58,7 +58,7 @@ async def test_detect_apples(client: AsyncClient) -> None:
 
     # Mock the food detection service
     with patch(
-        "src.app.services.food_detection.food_detection_service.process_image",
+        "src.app.services.food_detection_service.food_detection_service.process_image",
         new_callable=AsyncMock,
     ) as mock_process:
         # Configure mock to return our test data
@@ -139,7 +139,7 @@ async def test_detect_processing_error(client: AsyncClient) -> None:
 
     # Mock the food detection service to raise a ProcessingError
     with patch(
-        "src.app.services.food_detection.food_detection_service.process_image",
+        "src.app.services.food_detection_service.food_detection_service.process_image",
         new_callable=AsyncMock,
     ) as mock_process:
         from src.app.core.exceptions.custom import ProcessingError

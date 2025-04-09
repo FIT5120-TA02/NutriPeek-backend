@@ -24,6 +24,7 @@ class Settings(BaseSettings):
         ENVIRONMENT: Environment name (development, staging, production).
         DATABASE_URL: Database connection string.
         LOG_LEVEL: Logging level.
+        QR_CODE_BASE_URL: Base URL for QR code generation.
     """
 
     # Application settings
@@ -35,6 +36,9 @@ class Settings(BaseSettings):
 
     # Database settings
     DATABASE_URL: Optional[str] = None
+
+    # QR Code settings
+    QR_CODE_BASE_URL: str = "https://nutripeek.pro"
 
     # Set model_config to use the appropriate env file
     model_config = SettingsConfigDict(
@@ -59,6 +63,28 @@ class Settings(BaseSettings):
             logger.debug(f"Raw DATABASE_URL from env: {v}")
             return v
         return None
+
+    @field_validator("QR_CODE_BASE_URL")
+    def validate_qr_code_base_url(cls, v: str) -> str:
+        """Validate and normalize the QR code base URL.
+
+        Args:
+            v: The QR code base URL.
+
+        Returns:
+            The normalized QR code base URL.
+        """
+        # Remove trailing slashes for consistency
+        base_url = v.rstrip("/")
+
+        # Ensure URL uses HTTPS unless it's localhost
+        if base_url.startswith("http://") and not base_url.startswith(
+            "http://localhost"
+        ):
+            base_url = base_url.replace("http://", "https://")
+
+        logger.debug(f"Normalized QR_CODE_BASE_URL: {base_url}")
+        return base_url
 
     @property
     def is_development(self) -> bool:
@@ -105,3 +131,4 @@ if settings.DATABASE_URL:
 else:
     logger.info("Database URL is not configured")
 logger.info(f"Debug mode: {settings.DEBUG}")
+logger.info(f"QR code base URL: {settings.QR_CODE_BASE_URL}")
