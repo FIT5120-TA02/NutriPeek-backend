@@ -108,3 +108,24 @@ class InvalidRequestError(ApplicationError):
             details: Additional error details.
         """
         super().__init__(message=message, status_code=400, details=details)
+
+
+class ResourceNotFoundError(ApplicationError):
+    """Exception raised when a requested resource is not found.
+
+    This could be due to invalid identifiers, deleted resources,
+    or resources that don't exist in the database.
+    """
+
+    def __init__(
+        self,
+        message: str = "Requested resource not found",
+        details: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Initialize ResourceNotFoundError.
+
+        Args:
+            message: Error message.
+            details: Additional error details.
+        """
+        super().__init__(message=message, status_code=404, details=details)

@@ -1,5 +1,6 @@
 """Pydantic schemas package."""
 
+from src.app.schemas.food import FoodAutocompleteResponse, FoodNutrientResponse
 from src.app.schemas.food_detection import (
     FoodDetectionError,
     FoodDetectionResponse,
@@ -12,4 +13,6 @@ __all__ = [
     "FoodDetectionResponse",
     "FoodItemDetection",
     "FoodDetectionError",
+    "FoodAutocompleteResponse",
+    "FoodNutrientResponse",
 ]
