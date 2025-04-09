@@ -11,11 +11,13 @@ def generate_upload_qr(request: Request):
     upload_page_url = f"{base_url}/upload/{shortcode}"
     return GenerateUploadQRResponse(upload_url=upload_page_url, qrcode_base64=qrcode_base64)
 
+
 @router.post("/upload/{shortcode}", response_model=UploadImageResponse)
 async def upload_image(shortcode: str, file: UploadFile = File(...)):
     content = await file.read()
     qrcode_upload.save_uploaded_file(shortcode, content)
     return UploadImageResponse(message="Upload successful")
+
 
 @router.get("/result/{shortcode}", response_model=DetectionResultResponse)
 def get_result(shortcode: str):

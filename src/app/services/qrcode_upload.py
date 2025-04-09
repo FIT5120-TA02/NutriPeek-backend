@@ -15,9 +15,11 @@ def generate_upload_qr(base_url: str):
     qrcode_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
     return shortcode, upload_url, qrcode_base64
 
+
 def save_uploaded_file(shortcode: str, file_data: bytes):
     """Save uploaded image data"""
     temp_storage.save_file(shortcode, file_data)
+
 
 def detect_image(file_data: bytes):
     """Call your model for image recognition (using dummy data for now)"""
