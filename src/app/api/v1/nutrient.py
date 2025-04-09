@@ -18,6 +18,7 @@ router = APIRouter(prefix="/nutrient", tags=["nutrient"])
     summary="Calculate nutritional gaps for a child",
     description="Calculate the nutritional gaps between recommended intake and what's provided by selected ingredients",
     responses={
+        422: {"description": "Validation error in request data"},
         404: {
             "description": "Ingredient not found or no recommended intake for age/gender"
         },
@@ -49,13 +50,6 @@ async def calculate_nutrient_gap(
         # Get child profile data
         age = request.child_profile.age
         gender = request.child_profile.gender
-
-        # Validate gender value
-        if gender not in ["boy", "girl"]:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Gender must be either 'boy' or 'girl'",
-            )
 
         # Use the nutrient service to calculate the nutrient gaps
         return await nutrient_service.calculate_nutrient_gaps(

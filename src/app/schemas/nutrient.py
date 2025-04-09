@@ -1,15 +1,23 @@
 """Schemas for nutrient API endpoints."""
 
+from enum import Enum
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
+
+
+class Gender(str, Enum):
+    """Valid gender values for child profiles."""
+
+    BOY = "boy"
+    GIRL = "girl"
 
 
 class ChildProfile(BaseModel):
     """Schema for child profile data."""
 
     age: int = Field(..., ge=0, le=18, description="Age of the child (0-18 years)")
-    gender: str = Field(..., description="Gender of the child (boy/girl)")
+    gender: Gender = Field(..., description="Gender of the child (boy/girl)")
 
     class ConfigDict:
         """Pydantic configuration."""
@@ -22,7 +30,9 @@ class NutrientGapRequest(BaseModel):
 
     child_profile: ChildProfile = Field(..., description="Child profile data")
     ingredient_ids: List[str] = Field(
-        ..., description="List of ingredient IDs (food_nutrient.id) chosen by the user"
+        ...,
+        min_length=1,
+        description="List of ingredient IDs (food_nutrient.id) chosen by the user",
     )
 
     class ConfigDict:
