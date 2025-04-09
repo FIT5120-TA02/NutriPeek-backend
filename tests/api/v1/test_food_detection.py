@@ -157,3 +157,191 @@ async def test_detect_processing_error(client: AsyncClient) -> None:
         data = response.json()
         assert "detail" in data
         assert "Failed to process image" in data["detail"]
+
+
+@pytest.mark.asyncio
+async def test_map_food_to_nutrients_success(client: AsyncClient) -> None:
+    """Test mapping food items to nutrients with successful response.
+
+    This test verifies that:
+    1. The endpoint returns a successful response
+    2. The mapped items contain the expected nutrient data
+    3. The unmapped items are correctly reported
+
+    Args:
+        client: Test client.
+    """
+    # Create test request data
+    request_data = {
+        "detected_items": ["apple", "banana", "orange"],
+        "children_profile_id": "test-profile-123",
+        "store_in_inventory": False,
+    }
+
+    # Mock food mapping service response
+    mock_mapped_items = {
+        "apple": {
+            "id": "1",
+            "food_name": "Apple",
+            "food_category": "Fruits",
+            "energy_with_fibre_kj": 52.0,
+            "protein_g": 0.3,
+            "total_fat_g": 0.2,
+            "carbs_with_sugar_alcohols_g": 14.0,
+            "dietary_fibre_g": 2.4,
+        },
+        "banana": {
+            "id": "2",
+            "food_name": "Banana",
+            "food_category": "Fruits",
+            "energy_with_fibre_kj": 89.0,
+            "protein_g": 1.1,
+            "total_fat_g": 0.3,
+            "carbs_with_sugar_alcohols_g": 22.8,
+            "dietary_fibre_g": 2.6,
+        },
+    }
+    mock_unmapped_items = ["orange"]
+
+    # Mock the food mapping service
+    with patch(
+        "src.app.services.food_mapping_service.food_mapping_service.map_food_items",
+        new_callable=AsyncMock,
+    ) as mock_map:
+        # Configure mock to return our test data
+        mock_map.return_value = (mock_mapped_items, mock_unmapped_items)
+
+        # Send request to the endpoint
+        response = await client.post(
+            "/api/v1/food-detection/map-nutrients",
+            json=request_data,
+        )
+
+        # Verify the request was sent correctly
+        mock_map.assert_called_once_with(
+            food_names=request_data["detected_items"],
+            children_profile_id=request_data["children_profile_id"],
+            store_in_inventory=request_data["store_in_inventory"],
+        )
+
+        # Verify response status
+        assert response.status_code == 200
+
+        # Verify response data
+        data = response.json()
+        assert "mapped_items" in data
+        assert "unmapped_items" in data
+
+        # Check mapped items
+        assert len(data["mapped_items"]) == 2
+        assert "apple" in data["mapped_items"]
+        assert "banana" in data["mapped_items"]
+
+        # Verify nutrient data is present
+        assert data["mapped_items"]["apple"]["food_name"] == "Apple"
+        assert data["mapped_items"]["apple"]["food_category"] == "Fruits"
+        assert "energy_with_fibre_kj" in data["mapped_items"]["apple"]
+        assert "protein_g" in data["mapped_items"]["apple"]
+
+        # Check unmapped items
+        assert len(data["unmapped_items"]) == 1
+        assert "orange" in data["unmapped_items"]
+
+
+@pytest.mark.asyncio
+async def test_map_food_to_nutrients_empty_items(client: AsyncClient) -> None:
+    """Test mapping with no food items provided.
+
+    Args:
+        client: Test client.
+    """
+    # Create test request with empty detected items
+    request_data = {
+        "detected_items": [],
+        "children_profile_id": "test-profile-123",
+        "store_in_inventory": False,
+    }
+
+    # Send request to the endpoint
+    response = await client.post(
+        "/api/v1/food-detection/map-nutrients",
+        json=request_data,
+    )
+
+    # Verify response
+    assert response.status_code == 400
+    data = response.json()
+    assert "detail" in data
+    assert "No food items provided" in data["detail"]
+
+
+@pytest.mark.asyncio
+async def test_map_food_to_nutrients_invalid_profile(client: AsyncClient) -> None:
+    """Test mapping with store_in_inventory=True but missing profile ID.
+
+    Args:
+        client: Test client.
+    """
+    # Create test request with store_in_inventory=True but no profile ID
+    request_data = {
+        "detected_items": ["apple", "banana"],
+        "children_profile_id": None,
+        "store_in_inventory": True,
+    }
+
+    # Mock the food mapping service to raise an InvalidRequestError
+    with patch(
+        "src.app.services.food_mapping_service.food_mapping_service.map_food_items",
+        new_callable=AsyncMock,
+    ) as mock_map:
+        from src.app.core.exceptions.custom import InvalidRequestError
+
+        mock_map.side_effect = InvalidRequestError(
+            "children_profile_id is required when store_in_inventory is True"
+        )
+
+        # Send request to the endpoint
+        response = await client.post(
+            "/api/v1/food-detection/map-nutrients",
+            json=request_data,
+        )
+
+        # Verify response
+        assert response.status_code == 400
+        data = response.json()
+        assert "detail" in data
+        assert "children_profile_id is required" in data["detail"]
+
+
+@pytest.mark.asyncio
+async def test_map_food_to_nutrients_server_error(client: AsyncClient) -> None:
+    """Test mapping with a server-side error.
+
+    Args:
+        client: Test client.
+    """
+    # Create test request
+    request_data = {
+        "detected_items": ["apple", "banana"],
+        "children_profile_id": "test-profile-123",
+        "store_in_inventory": False,
+    }
+
+    # Mock the food mapping service to raise a general exception
+    with patch(
+        "src.app.services.food_mapping_service.food_mapping_service.map_food_items",
+        new_callable=AsyncMock,
+    ) as mock_map:
+        mock_map.side_effect = Exception("Database connection error")
+
+        # Send request to the endpoint
+        response = await client.post(
+            "/api/v1/food-detection/map-nutrients",
+            json=request_data,
+        )
+
+        # Verify response
+        assert response.status_code == 500
+        data = response.json()
+        assert "detail" in data
+        assert "Error mapping nutrients" in data["detail"]
