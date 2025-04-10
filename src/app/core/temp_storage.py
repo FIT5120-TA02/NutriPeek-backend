@@ -186,5 +186,4 @@ class TempStorage:
         return count
 
 
-# Create a global singleton instance
 temp_storage = TempStorage()
