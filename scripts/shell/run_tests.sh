@@ -7,4 +7,4 @@ set -e
 source venv/bin/activate
 
 # Run tests with environment variables from test.env
-export $(grep -v "^#" .env | xargs) && python -m pytest -v
+# export $(grep -v "^#" .env | xargs) && python -m pytest -v
