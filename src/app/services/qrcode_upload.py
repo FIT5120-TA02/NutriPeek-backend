@@ -35,12 +35,6 @@ def save_uploaded_file(shortcode: str, file_data: bytes) -> None:
 
 
 def save_detection_result(shortcode: str, label: str, confidence: float) -> None:
-    result = f"{label}|{confidence}"
-    temp_storage.save_file(shortcode, result.encode('utf-8'))
-    threading.Thread(target=auto_delete_shortcode, args=(shortcode,), daemon=True).start()
-
-
-def save_detection_result(shortcode: str, label: str, confidence: float) -> None:
     """Save detection result after upload"""
     result = f"{label}|{confidence}"
     temp_storage.save_file(shortcode, result.encode('utf-8'))
