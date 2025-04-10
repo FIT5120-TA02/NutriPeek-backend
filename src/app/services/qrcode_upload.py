@@ -6,6 +6,7 @@ import uuid
 from io import BytesIO
 from src.app.core.temp_storage import temp_storage
 
+
 def generate_upload_qr(base_url: str):
     shortcode = str(uuid.uuid4())[:8]
     temp_storage.create_entry(shortcode)
@@ -16,10 +17,12 @@ def generate_upload_qr(base_url: str):
     qr_code_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
     return shortcode, upload_url, qr_code_base64
 
+
 def auto_delete_shortcode(shortcode: str, delay: int = 300):
     time.sleep(delay)
     if temp_storage.exists(shortcode):
         temp_storage.delete_entry(shortcode)
+
 
 def save_detection_result(shortcode: str, label: str, confidence: float):
     result = f"{label}|{confidence}"
