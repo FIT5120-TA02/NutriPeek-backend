@@ -46,4 +46,3 @@ class TempStorage:
 
 # Global singleton
 temp_storage = TempStorage()
-
