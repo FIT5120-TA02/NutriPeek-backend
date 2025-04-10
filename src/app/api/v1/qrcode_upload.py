@@ -10,23 +10,23 @@ router = APIRouter()
 def generate_upload_qr(request: Request):
     base_url = "https://nutripeek.pro"
     shortcode, _, qrcode_base64 = qrcode_upload.generate_upload_qr(base_url)
-    upload_page_url = f"{base_url}/upload/{shortcode}"
-    return GenerateUploadQRResponse(upload_url=upload_page_url, qrcode_base64=qrcode_base64)
+    return GenerateUploadQRResponse(upload_url=f"{base_url}/upload/{shortcode}", qrcode_base64=qrcode_base64)
 
 
 @router.post("/upload/{shortcode}", response_model=UploadImageResponse)
 async def upload_image(shortcode: str, file: UploadFile = File(...)):
     content = await file.read()
-    qrcode_upload.save_uploaded_file(shortcode, content)
+    label, confidence = detect_image(content)
+    qrcode_upload.save_detection_result(shortcode, label, confidence)
     return UploadImageResponse(message="Upload successful")
 
 
 @router.get("/result/{shortcode}", response_model=DetectionResultResponse)
 def get_result(shortcode: str):
-    file_data = qrcode_upload.temp_storage.get_file(shortcode)
-    if not file_data:
+    result = qrcode_upload.temp_storage.get_file(shortcode)
+    if not result:
         raise HTTPException(status_code=404, detail="Shortcode not found or expired")
 
-    label, confidence = detect_image(file_data)
-    qrcode_upload.temp_storage.delete_entry(shortcode)  # One-time use, delete after use
-    return DetectionResultResponse(label=label, confidence=confidence)
+    label, confidence = result.decode('utf-8').split("|")
+    qrcode_upload.temp_storage.delete_entry(shortcode)
+    return DetectionResultResponse(label=label, confidence=float(confidence))
