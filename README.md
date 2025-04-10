@@ -47,27 +47,38 @@ A FastAPI backend for the NutriPeek project with ML-powered food detection capab
 │   │   │   ├── ml/         # Machine learning components
 │   │   │   │   └── models/ # ML model files (.pt)
 │   │   │   ├── setup.py    # Application setup and initialization
-│   │   │   └── utils/      # Utility functions and helpers
+│   │   │   └── temp_storage.py # Temporary storage management
 │   │   ├── crud/           # CRUD operations for database models
 │   │   ├── middleware/     # Custom middleware components
 │   │   ├── models/         # SQLAlchemy ORM models
 │   │   ├── schemas/        # Pydantic schemas for request/response validation
 │   │   ├── services/       # Business logic and service layer
+│   │   │   ├── food_detection_service.py # YOLO-based food detection
+│   │   │   ├── food_mapping_service.py   # Food mapping to nutrition data
+│   │   │   ├── nutrient_service.py       # Nutrition information service
+│   │   │   └── qrcode_service.py         # QR code generation and handling
 │   │   └── main.py         # Application entry point
 ├── tests/                  # Test suite
 │   ├── api/                # API endpoint tests
 │   ├── core/               # Core component tests
 │   ├── services/           # Service layer tests
+│   ├── crud/               # CRUD operation tests
 │   └── conftest.py         # Test fixtures and configuration
 ├── migrations/             # Alembic database migrations
 ├── scripts/                # Utility scripts for development and deployment
-│   └── python/             # Python utility scripts
+│   ├── python/             # Python utility scripts
+│   └── shell/              # Shell scripts
 ├── .vscode/                # VS Code configurations
-│   └── launch.json         # Debug configurations
 ├── env/                    # Environment configurations
+│   ├── local.env           # Local development environment
+│   ├── dev.env             # Development server environment
+│   └── test.env            # Testing environment
 ├── requirements.txt        # Project dependencies
 ├── pyproject.toml          # Python project configuration
 ├── alembic.ini             # Alembic configuration
+├── .flake8                 # Flake8 configuration
+├── mypy.ini                # MyPy configuration
+├── MIGRATIONS.md           # Documentation for database migrations
 └── .env                    # Environment variables (development only)
 ```
 
@@ -201,6 +212,35 @@ async def get_example():
 
 ```bash
 alembic revision --autogenerate -m "Add new model"
+```
+
+### Setting Up Git Hooks
+
+This project uses Git hooks to ensure code quality and prevent commits or pushes with failing tests or linting issues.
+
+To install the Git hooks:
+
+```bash
+# Install pre-commit package if not already installed
+pip install pre-commit
+
+# Set up the hooks
+./scripts/shell/setup-hooks.sh
+```
+
+This will set up:
+
+- **pre-commit**: Runs linting checks and tests before allowing a commit
+- **pre-push**: Runs tests with coverage report before allowing a push
+
+If you need to bypass the hooks temporarily (not recommended), you can use:
+
+```bash
+# For commit
+git commit --no-verify
+
+# For push
+git push --no-verify
 ```
 
 ### Working with the YOLO Model

@@ -1,0 +1,9 @@
+repos:
+  - repo: local
+    hooks:
+      - id: pytest-cov
+        name: pytest with coverage
+        entry: bash -c 'export $(grep -v "^#" env/test.env | xargs) && python -m pytest --cov=src'
+        language: system
+        pass_filenames: false
+        always_run: true
