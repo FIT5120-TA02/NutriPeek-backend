@@ -8,9 +8,12 @@ from src.app.core.exceptions.base import (
     ValidationError,
 )
 from src.app.core.exceptions.custom import (
+    FoodMappingError,
     InvalidImageError,
+    InvalidRequestError,
     ModelLoadError,
     ProcessingError,
+    ResourceNotFoundError,
 )
 
 __all__ = [
@@ -19,7 +22,10 @@ __all__ = [
     "AuthorizationError",
     "NotFoundError",
     "ValidationError",
+    "FoodMappingError",
     "InvalidImageError",
+    "InvalidRequestError",
     "ModelLoadError",
     "ProcessingError",
+    "ResourceNotFoundError",
 ]

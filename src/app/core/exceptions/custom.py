@@ -66,3 +66,66 @@ class InvalidImageError(ApplicationError):
             details: Additional error details.
         """
         super().__init__(message=message, status_code=400, details=details)
+
+
+class FoodMappingError(ApplicationError):
+    """Exception raised when mapping food items to nutrient data fails.
+
+    This could be due to database errors, invalid data, or other issues
+    related to the food mapping process.
+    """
+
+    def __init__(
+        self,
+        message: str = "Failed to map food items to nutrient data",
+        details: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Initialize FoodMappingError.
+
+        Args:
+            message: Error message.
+            details: Additional error details.
+        """
+        super().__init__(message=message, status_code=500, details=details)
+
+
+class InvalidRequestError(ApplicationError):
+    """Exception raised when a request contains invalid parameters.
+
+    This could be due to missing required parameters, invalid values,
+    or other issues with the request data.
+    """
+
+    def __init__(
+        self,
+        message: str = "Invalid request parameters",
+        details: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Initialize InvalidRequestError.
+
+        Args:
+            message: Error message.
+            details: Additional error details.
+        """
+        super().__init__(message=message, status_code=400, details=details)
+
+
+class ResourceNotFoundError(ApplicationError):
+    """Exception raised when a requested resource is not found.
+
+    This could be due to invalid identifiers, deleted resources,
+    or resources that don't exist in the database.
+    """
+
+    def __init__(
+        self,
+        message: str = "Requested resource not found",
+        details: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Initialize ResourceNotFoundError.
+
+        Args:
+            message: Error message.
+            details: Additional error details.
+        """
+        super().__init__(message=message, status_code=404, details=details)

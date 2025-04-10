@@ -1,8 +1,7 @@
 """Application configuration module."""
 
 import logging
-from pathlib import Path  # noqa: F401
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -23,13 +22,9 @@ class Settings(BaseSettings):
         APP_VERSION: Version of the application.
         DEBUG: Debug mode flag.
         ENVIRONMENT: Environment name (development, staging, production).
-        SECRET_KEY: Secret key for security.
-        ACCESS_TOKEN_EXPIRE_MINUTES: Token expiration time in minutes.
         DATABASE_URL: Database connection string.
-        ALLOWED_HOSTS: List of allowed hosts.
-        OPENWEATHERMAP_API_KEY: API key for OpenWeatherMap service.
-        GOOGLE_MAPS_API_KEY: API key for Google Maps service.
         LOG_LEVEL: Logging level.
+        QR_CODE_BASE_URL: Base URL for QR code generation.
     """
 
     # Application settings
@@ -39,15 +34,11 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "local"
     LOG_LEVEL: str = "INFO"
 
-    # Security settings
-    SECRET_KEY: str = "your-secret-key-for-development-only"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-
     # Database settings
     DATABASE_URL: Optional[str] = None
 
-    # CORS settings
-    ALLOWED_HOSTS: List[str] = ["*"]
+    # QR Code settings
+    QR_CODE_BASE_URL: str = "https://nutripeek.pro"
 
     # Set model_config to use the appropriate env file
     model_config = SettingsConfigDict(
@@ -73,6 +64,30 @@ class Settings(BaseSettings):
             return v
         return None
 
+    @field_validator("QR_CODE_BASE_URL")
+    def validate_qr_code_base_url(cls, v: str) -> str:
+        """Validate and normalize the QR code base URL.
+
+        Args:
+            v: The QR code base URL.
+
+        Returns:
+            The normalized QR code base URL.
+        """
+        # Remove trailing slashes for consistency
+        base_url = v.rstrip("/")
+
+        # Ensure URL uses HTTPS unless it's localhost
+        if (
+            base_url.startswith("http://")
+            and not base_url.startswith("http://localhost")
+            and not cls.is_development
+        ):
+            base_url = base_url.replace("http://", "https://")
+
+        logger.debug(f"Normalized QR_CODE_BASE_URL: {base_url}")
+        return base_url
+
     @property
     def is_development(self) -> bool:
         """Check if the application is running in development mode.
@@ -96,7 +111,16 @@ class Settings(BaseSettings):
 settings = Settings()
 
 # Log settings information - useful for debugging
-logger.setLevel(getattr(logging, settings.LOG_LEVEL))
+# Set default log level to INFO if LOG_LEVEL is empty or invalid
+log_level = "INFO"
+if settings.LOG_LEVEL:
+    log_level = settings.LOG_LEVEL.upper()
+    # Validate the log level
+    if log_level not in ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"):
+        logger.warning(f"Invalid LOG_LEVEL: {log_level}, defaulting to INFO")
+        log_level = "INFO"
+
+logger.setLevel(getattr(logging, log_level))
 logger.info(f"Loaded settings for environment: {settings.ENVIRONMENT}")
 # Mask sensitive parts of the database URL
 if settings.DATABASE_URL:
@@ -109,3 +133,4 @@ if settings.DATABASE_URL:
 else:
     logger.info("Database URL is not configured")
 logger.info(f"Debug mode: {settings.DEBUG}")
+logger.info(f"QR code base URL: {settings.QR_CODE_BASE_URL}")

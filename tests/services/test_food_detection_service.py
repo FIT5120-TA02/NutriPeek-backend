@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from fastapi import UploadFile
 
-from src.app.services.food_detection import FoodDetectionService
+from src.app.services.food_detection_service import FoodDetectionService
 
 
 @pytest.mark.asyncio
