@@ -10,7 +10,8 @@ router = APIRouter()
 def generate_upload_qr(request: Request):
     base_url = "https://nutripeek.pro"
     shortcode, _, qrcode_base64 = qrcode_upload.generate_upload_qr(base_url)
-    return GenerateUploadQRResponse(upload_url=f"{base_url}/upload/{shortcode}", qrcode_base64=qrcode_base64)
+    upload_page_url = f"{base_url}/upload/{shortcode}"
+    return GenerateUploadQRResponse(upload_url=upload_page_url, qrcode_base64=qrcode_base64)
 
 
 @router.post("/upload/{shortcode}", response_model=UploadImageResponse)

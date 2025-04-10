@@ -3,8 +3,13 @@ import qrcode
 import threading
 import time
 import uuid
+import os
 from io import BytesIO
 from src.app.core.temp_storage import temp_storage
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+TEMP_DIR = os.path.join(BASE_DIR, 'temp_files')
+os.makedirs(TEMP_DIR, exist_ok=True)
 
 
 def generate_upload_qr(base_url: str):
@@ -24,7 +29,12 @@ def auto_delete_shortcode(shortcode: str, delay: int = 300):
         temp_storage.delete_entry(shortcode)
 
 
-def save_detection_result(shortcode: str, label: str, confidence: float):
+def save_uploaded_file(shortcode: str, file_data: bytes) -> None:
+    temp_storage.save_file(shortcode, file_data)
+    threading.Thread(target=auto_delete_shortcode, args=(shortcode,), daemon=True).start()
+
+
+def save_detection_result(shortcode: str, label: str, confidence: float) -> None:
     result = f"{label}|{confidence}"
     temp_storage.save_file(shortcode, result.encode('utf-8'))
     threading.Thread(target=auto_delete_shortcode, args=(shortcode,), daemon=True).start()
