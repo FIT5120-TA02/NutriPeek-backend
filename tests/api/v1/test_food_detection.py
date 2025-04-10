@@ -165,40 +165,46 @@ async def test_map_food_to_nutrients_success(client: AsyncClient) -> None:
 
     This test verifies that:
     1. The endpoint returns a successful response
-    2. The mapped items contain the expected nutrient data
+    2. The mapped items contain the expected nutrient data with quantities
     3. The unmapped items are correctly reported
 
     Args:
         client: Test client.
     """
-    # Create test request data
+    # Create test request data with duplicate items to test quantity counting
     request_data = {
-        "detected_items": ["apple", "banana", "orange"],
+        "detected_items": ["apple", "apple", "banana", "orange", "banana"],
         "children_profile_id": "test-profile-123",
         "store_in_inventory": False,
     }
 
-    # Mock food mapping service response
+    # Mock food mapping service response (with quantities)
     mock_mapped_items = {
         "apple": {
-            "id": "1",
-            "food_name": "Apple",
-            "food_category": "Fruits",
-            "energy_with_fibre_kj": 52.0,
-            "protein_g": 0.3,
-            "total_fat_g": 0.2,
-            "carbs_with_sugar_alcohols_g": 14.0,
-            "dietary_fibre_g": 2.4,
+            "nutrient_data": {
+                "id": "1",
+                "food_name": "Apple",
+                "food_category": "Fruits",
+                "energy_with_fibre_kj": 52.0,
+                "protein_g": 0.3,
+                "total_fat_g": 0.2,
+                "carbs_with_sugar_alcohols_g": 14.0,
+                "dietary_fibre_g": 2.4,
+            },
+            "quantity": 2,  # 2 apples
         },
         "banana": {
-            "id": "2",
-            "food_name": "Banana",
-            "food_category": "Fruits",
-            "energy_with_fibre_kj": 89.0,
-            "protein_g": 1.1,
-            "total_fat_g": 0.3,
-            "carbs_with_sugar_alcohols_g": 22.8,
-            "dietary_fibre_g": 2.6,
+            "nutrient_data": {
+                "id": "2",
+                "food_name": "Banana",
+                "food_category": "Fruits",
+                "energy_with_fibre_kj": 89.0,
+                "protein_g": 1.1,
+                "total_fat_g": 0.3,
+                "carbs_with_sugar_alcohols_g": 22.8,
+                "dietary_fibre_g": 2.6,
+            },
+            "quantity": 2,  # 2 bananas
         },
     }
     mock_unmapped_items = ["orange"]
@@ -237,11 +243,17 @@ async def test_map_food_to_nutrients_success(client: AsyncClient) -> None:
         assert "apple" in data["mapped_items"]
         assert "banana" in data["mapped_items"]
 
+        # Verify quantity information is present
+        assert data["mapped_items"]["apple"]["quantity"] == 2
+        assert data["mapped_items"]["banana"]["quantity"] == 2
+
         # Verify nutrient data is present
-        assert data["mapped_items"]["apple"]["food_name"] == "Apple"
-        assert data["mapped_items"]["apple"]["food_category"] == "Fruits"
-        assert "energy_with_fibre_kj" in data["mapped_items"]["apple"]
-        assert "protein_g" in data["mapped_items"]["apple"]
+        assert data["mapped_items"]["apple"]["nutrient_data"]["food_name"] == "Apple"
+        assert (
+            data["mapped_items"]["apple"]["nutrient_data"]["food_category"] == "Fruits"
+        )
+        assert "energy_with_fibre_kj" in data["mapped_items"]["apple"]["nutrient_data"]
+        assert "protein_g" in data["mapped_items"]["apple"]["nutrient_data"]
 
         # Check unmapped items
         assert len(data["unmapped_items"]) == 1

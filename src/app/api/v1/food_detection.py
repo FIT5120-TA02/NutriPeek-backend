@@ -90,13 +90,13 @@ async def detect_food_items(image: UploadFile = File(...)):
         500: {"model": FoodDetectionError, "description": "Mapping error"},
     },
     status_code=status.HTTP_200_OK,
-    summary="Map detected food items to nutrient data",
-    description="Match detected food items to nutritional information in the database using a hierarchical search approach",
+    summary="Map detected food items to nutrient data with quantities",
+    description="Match detected food items to nutritional information in the database, counting duplicates and providing quantity information",
 )
 async def map_food_to_nutrients(
     request: FoodMappingRequest, db: AsyncSession = Depends(get_async_db)
 ):
-    """Map detected food items to nutrient data in the database.
+    """Map detected food items to nutrient data in the database with quantity information.
 
     This endpoint takes a list of food item names (usually from detection results)
     and attempts to match them to nutritional data in the database using the following strategy:
@@ -105,6 +105,7 @@ async def map_food_to_nutrients(
     2. If not found, try fuzzy matching on food_category
     3. If still not found, try fuzzy matching on food_name
 
+    It counts duplicate items and includes quantity information in the response.
     It can optionally store the results in a user's inventory.
 
     Args:
@@ -112,7 +113,7 @@ async def map_food_to_nutrients(
         db: Database session
 
     Returns:
-        Mapping of food items to nutrient data and list of unmapped items
+        Mapping of food items to nutrient data with quantities and list of unmapped items
 
     Raises:
         HTTPException: If mapping fails or request is invalid
@@ -122,6 +123,7 @@ async def map_food_to_nutrients(
             raise InvalidRequestError("No food items provided to map")
 
         # Map each food item using the hierarchical search approach
+        # The service now handles counting duplicates
         mapped_items, unmapped_items = await food_mapping_service.map_food_items(
             food_names=request.detected_items,
             children_profile_id=request.children_profile_id,

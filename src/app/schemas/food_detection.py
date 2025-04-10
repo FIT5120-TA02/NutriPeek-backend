@@ -62,6 +62,18 @@ class FoodNutrientSummary(BaseModel):
         from_attributes = True
 
 
+class FoodItemQuantity(BaseModel):
+    """Schema for food item with quantity."""
+
+    nutrient_data: FoodNutrientSummary
+    quantity: int = Field(..., gt=0, description="Quantity of the food item detected")
+
+    class ConfigDict:
+        """Pydantic configuration."""
+
+        from_attributes = True
+
+
 class FoodMappingRequest(BaseModel):
     """Request schema for mapping detected food items to nutrient data."""
 
@@ -80,9 +92,9 @@ class FoodMappingRequest(BaseModel):
 class FoodMappingResponse(BaseModel):
     """Response schema for food mapping."""
 
-    mapped_items: Dict[str, FoodNutrientSummary] = Field(
+    mapped_items: Dict[str, FoodItemQuantity] = Field(
         default_factory=dict,
-        description="Mapping of detected food item names to nutrient data",
+        description="Mapping of detected food items to nutrient data with quantities",
     )
     unmapped_items: List[str] = Field(
         default_factory=list,
