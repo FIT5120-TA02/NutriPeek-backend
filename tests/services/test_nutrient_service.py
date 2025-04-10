@@ -100,7 +100,7 @@ async def test_calculate_nutrient_gaps_success():
             [],
             202.0,
         ),
-    ) as mock_calc_gaps:
+    ) as _:
         # Act
         result = await nutrient_service.calculate_nutrient_gaps(
             mock_db, age=age, gender=gender, ingredient_ids=ingredient_ids

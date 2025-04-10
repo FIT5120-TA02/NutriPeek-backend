@@ -1,6 +1,6 @@
 """Ingredient Nutrient join table model module."""
 
-from sqlalchemy import Float, ForeignKey, Integer, String
+from sqlalchemy import Float, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.app.core.db.base_class import Base, TimestampMixin

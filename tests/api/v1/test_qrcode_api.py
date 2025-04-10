@@ -4,11 +4,9 @@ from io import BytesIO
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from fastapi import HTTPException
 from httpx import AsyncClient
 from PIL import Image
 
-from src.app.api.v1.qrcode import get_result
 from src.app.core.temp_storage import FileStatus
 
 
