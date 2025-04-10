@@ -95,7 +95,7 @@ class QRCodeService:
         temp_storage.create_entry(shortcode, expiry_seconds=expiry_seconds)
 
         # Generate the upload URL
-        upload_url = f"{base_url}/upload/{shortcode}"
+        upload_url = f"{base_url}/QRUpload?code={shortcode}"
 
         # Generate QR code
         qr = qrcode.QRCode(

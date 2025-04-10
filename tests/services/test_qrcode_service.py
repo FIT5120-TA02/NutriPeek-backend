@@ -79,7 +79,7 @@ def test_generate_upload_qr_success(service, mock_temp_storage):
         # Verify the shortcode is as expected
         assert shortcode == "12345678"
         # Verify the URL is constructed correctly
-        assert upload_url == "https://example.com/upload/12345678"
+        assert upload_url == "https://example.com/QRUpload?code=12345678"
         # Verify the base64 string is non-empty and valid base64
         assert qrcode_base64
         # Try to decode as base64 - should not raise

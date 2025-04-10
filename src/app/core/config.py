@@ -78,8 +78,10 @@ class Settings(BaseSettings):
         base_url = v.rstrip("/")
 
         # Ensure URL uses HTTPS unless it's localhost
-        if base_url.startswith("http://") and not base_url.startswith(
-            "http://localhost"
+        if (
+            base_url.startswith("http://")
+            and not base_url.startswith("http://localhost")
+            and not cls.is_development
         ):
             base_url = base_url.replace("http://", "https://")
 
