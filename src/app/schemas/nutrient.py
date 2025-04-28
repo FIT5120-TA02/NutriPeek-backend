@@ -73,11 +73,11 @@ class NutrientGapResponse(BaseModel):
     nutrient_gaps: Dict[str, NutrientInfo] = Field(
         ..., description="Map of nutrient names to their gap information"
     )
-    missing_nutrients: List[str] = Field(
+    missing_nutrients: List[NutrientInfo] = Field(
         default_factory=list,
         description="List of nutrients with no intake from selected ingredients",
     )
-    excess_nutrients: List[str] = Field(
+    excess_nutrients: List[NutrientInfo] = Field(
         default_factory=list,
         description="List of nutrients exceeding recommended intake",
     )

@@ -188,7 +188,7 @@ class NutrientService:
     def calculate_gaps(
         recommended_intakes: List,
         nutrient_intakes: Dict[str, Dict[str, float]],
-    ) -> Tuple[Dict[str, NutrientInfo], List[str], List[str], float]:
+    ) -> Tuple[Dict[str, NutrientInfo], List[NutrientInfo], List[NutrientInfo], float]:
         """Calculate gaps between recommended and actual nutrient intakes.
 
         Args:
