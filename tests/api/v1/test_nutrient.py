@@ -6,7 +6,12 @@ import pytest
 from fastapi import status
 from httpx import AsyncClient
 
-from src.app.schemas.nutrient import NutrientGapResponse, NutrientInfo
+from src.app.schemas.nutrient import (
+    NutrientGapResponse,
+    NutrientInfo,
+    NutrientIntakeInfo,
+    NutrientIntakeResponse,
+)
 
 
 @pytest.mark.asyncio
@@ -150,6 +155,163 @@ async def test_calculate_nutrient_gap_internal_error(client: AsyncClient):
         # Act
         response = await client.post(
             "/api/v1/nutrient/calculate-gap", json=test_request_payload
+        )
+
+        # Assert
+        assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+
+
+@pytest.mark.asyncio
+async def test_get_nutrient_intake_success(client: AsyncClient):
+    """Test successful retrieval of required nutrient intake."""
+    # Arrange
+    test_request_payload = {
+        "age": 10,
+        "gender": "boy",
+    }
+
+    # Prepare mock response
+    mock_response = NutrientIntakeResponse(
+        nutrient_intakes={
+            "Energy(a)": NutrientIntakeInfo(
+                name="Energy(a)",
+                recommended_intake=8500.0,
+                unit="kJ",
+                category="Energy",
+            ),
+            "Protein": NutrientIntakeInfo(
+                name="Protein",
+                recommended_intake=40.0,
+                unit="g",
+                category="Macronutrients",
+            ),
+            "Total Fat(c)": NutrientIntakeInfo(
+                name="Total Fat(c)",
+                recommended_intake=67.0,
+                unit="g",
+                category="Macronutrients",
+            ),
+            "Carbohydrate(c)": NutrientIntakeInfo(
+                name="Carbohydrate(c)",
+                recommended_intake=230.0,
+                unit="g",
+                category="Macronutrients",
+            ),
+            "Dietary Fibre": NutrientIntakeInfo(
+                name="Dietary Fibre",
+                recommended_intake=24.0,
+                unit="g",
+                category="Macronutrients",
+            ),
+        },
+    )
+
+    # Mock the service call
+    with patch(
+        "src.app.api.v1.nutrient.nutrient_service.get_required_nutrient_intake",
+        return_value=mock_response,
+    ):
+        # Act
+        response = await client.post(
+            "/api/v1/nutrient/nutrient-intake", json=test_request_payload
+        )
+
+        # Assert
+        assert response.status_code == status.HTTP_200_OK
+
+        # Check response structure
+        data = response.json()
+        assert "nutrient_intakes" in data
+
+        # Check for required nutrients
+        assert "Energy(a)" in data["nutrient_intakes"]
+        assert "Protein" in data["nutrient_intakes"]
+        assert "Total Fat(c)" in data["nutrient_intakes"]
+        assert "Carbohydrate(c)" in data["nutrient_intakes"]
+        assert "Dietary Fibre" in data["nutrient_intakes"]
+
+        # Check specific values
+        assert data["nutrient_intakes"]["Energy(a)"]["recommended_intake"] == 8500.0
+        assert data["nutrient_intakes"]["Protein"]["recommended_intake"] == 40.0
+        assert data["nutrient_intakes"]["Total Fat(c)"]["recommended_intake"] == 67.0
+        assert (
+            data["nutrient_intakes"]["Carbohydrate(c)"]["recommended_intake"] == 230.0
+        )
+        assert data["nutrient_intakes"]["Dietary Fibre"]["recommended_intake"] == 24.0
+
+
+@pytest.mark.asyncio
+async def test_get_nutrient_intake_validation_error(client: AsyncClient):
+    """Test validation error when invalid data is provided for nutrient intake."""
+    # Test cases with invalid data
+    invalid_payloads = [
+        # Missing required fields
+        {},
+        # Missing age
+        {"gender": "boy"},
+        # Missing gender
+        {"age": 10},
+        # Invalid age (negative)
+        {"age": -5, "gender": "boy"},
+        # Invalid age (too high)
+        {"age": 19, "gender": "boy"},
+        # Invalid gender (not in enum)
+        {"age": 10, "gender": "invalid"},
+    ]
+
+    for payload in invalid_payloads:
+        # Act
+        response = await client.post("/api/v1/nutrient/nutrient-intake", json=payload)
+
+        # Assert
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        # Ensure response contains validation error details
+        assert "detail" in response.json()
+
+
+@pytest.mark.asyncio
+async def test_get_nutrient_intake_not_found(client: AsyncClient):
+    """Test resource not found error handling for nutrient intake."""
+    # Arrange
+    test_request_payload = {
+        "age": 99,  # Age without data
+        "gender": "boy",
+    }
+
+    # Mock service to raise ResourceNotFoundError
+    with patch(
+        "src.app.api.v1.nutrient.nutrient_service.get_required_nutrient_intake",
+        side_effect=Exception(
+            "No recommended nutrient intake data found for age 99 and gender boy"
+        ),
+    ):
+        # Act
+        response = await client.post(
+            "/api/v1/nutrient/nutrient-intake", json=test_request_payload
+        )
+
+        # Assert
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        assert "detail" in response.json()
+
+
+@pytest.mark.asyncio
+async def test_get_nutrient_intake_internal_error(client: AsyncClient):
+    """Test internal server error handling for nutrient intake."""
+    # Arrange
+    test_request_payload = {
+        "age": 10,
+        "gender": "boy",
+    }
+
+    # Mock service to raise an unexpected error
+    with patch(
+        "src.app.api.v1.nutrient.nutrient_service.get_required_nutrient_intake",
+        side_effect=Exception("Unexpected error"),
+    ):
+        # Act
+        response = await client.post(
+            "/api/v1/nutrient/nutrient-intake", json=test_request_payload
         )
 
         # Assert

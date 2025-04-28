@@ -84,3 +84,62 @@ class NutrientGapResponse(BaseModel):
     total_calories: float = Field(
         0.0, description="Total calories (energy) from selected ingredients"
     )
+
+
+class NutrientIntakeInfo(BaseModel):
+    """Schema for nutrient intake information."""
+
+    name: str = Field(..., description="Name of the nutrient")
+    recommended_intake: float = Field(
+        ..., description="Recommended daily intake amount"
+    )
+    unit: str = Field(..., description="Unit of measurement")
+    category: Optional[str] = Field(None, description="Category of the nutrient")
+
+
+class NutrientIntakeResponse(BaseModel):
+    """Response schema for required nutrient intake."""
+
+    nutrient_intakes: Dict[str, NutrientIntakeInfo] = Field(
+        ..., description="Map of nutrient names to their recommended intake information"
+    )
+
+    class ConfigDict:
+        """Pydantic configuration."""
+
+        json_schema_extra = {
+            "example": {
+                "nutrient_intakes": {
+                    "Energy(a)": {
+                        "name": "Energy(a)",
+                        "recommended_intake": 8500.0,
+                        "unit": "kJ",
+                        "category": "Energy",
+                    },
+                    "Protein": {
+                        "name": "Protein",
+                        "recommended_intake": 40.0,
+                        "unit": "g",
+                        "category": "Macronutrients",
+                    },
+                    "Total Fat(c)": {
+                        "name": "Total Fat(c)",
+                        "recommended_intake": 67.0,
+                        "unit": "g",
+                        "category": "Macronutrients",
+                    },
+                    "Carbohydrate(c)": {
+                        "name": "Carbohydrate(c)",
+                        "recommended_intake": 230.0,
+                        "unit": "g",
+                        "category": "Macronutrients",
+                    },
+                    "Dietary Fibre": {
+                        "name": "Dietary Fibre",
+                        "recommended_intake": 24.0,
+                        "unit": "g",
+                        "category": "Macronutrients",
+                    },
+                }
+            }
+        }

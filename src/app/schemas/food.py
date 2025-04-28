@@ -1,6 +1,6 @@
 """Schemas for food API endpoints."""
 
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -42,3 +42,45 @@ class FoodNutrientResponse(BaseModel):
         """Pydantic configuration."""
 
         from_attributes = True
+
+
+class FoodCategoryAvgNutrients(BaseModel):
+    """Response schema for food category with average nutrient values.
+
+    Contains the category name and average nutritional values of all foods
+    in that category, useful for visualization in the frontend.
+    """
+
+    food_category: str = Field(..., description="Category of the food items")
+    count: int = Field(..., description="Number of food items in this category")
+    energy_with_fibre_kj: Optional[float] = Field(
+        None, description="Average energy content with fibre in kilojoules"
+    )
+    protein_g: Optional[float] = Field(
+        None, description="Average protein content in grams"
+    )
+    total_fat_g: Optional[float] = Field(
+        None, description="Average total fat content in grams"
+    )
+    carbs_with_sugar_alcohols_g: Optional[float] = Field(
+        None, description="Average carbohydrates content with sugar alcohols in grams"
+    )
+    dietary_fibre_g: Optional[float] = Field(
+        None, description="Average dietary fibre content in grams"
+    )
+    sodium_mg: Optional[float] = Field(
+        None, description="Average sodium content in milligrams"
+    )
+
+    class ConfigDict:
+        """Pydantic configuration."""
+
+        from_attributes = True
+
+
+class FoodCategoriesResponse(BaseModel):
+    """Response schema for list of food categories with average nutrient values."""
+
+    categories: List[FoodCategoryAvgNutrients] = Field(
+        ..., description="List of food categories with their average nutrient values"
+    )

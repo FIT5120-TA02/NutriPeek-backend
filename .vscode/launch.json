@@ -16,7 +16,7 @@
             ],
             "jinja": true,
             "justMyCode": true,
-            "envFile": "${workspaceFolder}/env/local.env",
+            "envFile": "${workspaceFolder}/env/dev.env",
             "env": {
                 "PYTHONPATH": "${workspaceFolder}"
             }

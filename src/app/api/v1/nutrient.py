@@ -5,7 +5,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.app.api.dependencies import get_async_db
 from src.app.core.exceptions.custom import ResourceNotFoundError
-from src.app.schemas.nutrient import NutrientGapRequest, NutrientGapResponse
+from src.app.schemas.nutrient import (
+    ChildProfile,
+    NutrientGapRequest,
+    NutrientGapResponse,
+    NutrientIntakeResponse,
+)
 from src.app.services.nutrient_service import nutrient_service
 
 router = APIRouter(prefix="/nutrient", tags=["nutrient"])
@@ -65,4 +70,58 @@ async def calculate_nutrient_gap(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error calculating nutrient gaps: {str(e)}",
+        )
+
+
+@router.post(
+    "/nutrient-intake",
+    response_model=NutrientIntakeResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get required nutrient intake for a child",
+    description="Get the required daily nutrient intake for a child based on their age and gender for key nutrients",
+    responses={
+        422: {"description": "Validation error in request data"},
+        404: {"description": "No recommended intake for the specified age/gender"},
+        500: {"description": "Internal server error"},
+    },
+)
+async def get_nutrient_intake(
+    child_profile: ChildProfile,
+    db: AsyncSession = Depends(get_async_db),
+) -> NutrientIntakeResponse:
+    """Get the required daily nutrient intake for a child based on their profile.
+
+    This endpoint returns the recommended daily intake for key nutrients
+    (Energy, Protein, Total Fat, Carbohydrate, and Dietary Fibre)
+    based on the child's age and gender.
+
+    Args:
+        child_profile: Child profile data with age and gender
+        db: Database session dependency
+
+    Returns:
+        Required nutrient intake information for key nutrients
+
+    Raises:
+        HTTPException: If there's no recommended intake data for the child's age and gender
+    """
+    try:
+        # Get child profile data
+        age = child_profile.age
+        gender = child_profile.gender
+
+        # Use the nutrient service to get the required nutrient intake
+        return await nutrient_service.get_required_nutrient_intake(
+            db, age=age, gender=gender
+        )
+
+    except ResourceNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error retrieving required nutrient intake: {str(e)}",
         )

@@ -8,7 +8,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.app.api.dependencies import get_async_db
 from src.app.core.exceptions.custom import ResourceNotFoundError
 from src.app.crud.crud_food_nutrients import food_nutrient_crud
-from src.app.schemas.food import FoodAutocompleteResponse, FoodNutrientResponse
+from src.app.schemas.food import (
+    FoodAutocompleteResponse,
+    FoodCategoriesResponse,
+    FoodNutrientResponse,
+)
 
 router = APIRouter(prefix="/food", tags=["food"])
 
@@ -73,6 +77,55 @@ async def autocomplete_food(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error searching for food items: {str(e)}",
+        )
+
+
+@router.get(
+    "/categories",
+    response_model=FoodCategoriesResponse,
+    status_code=status.HTTP_200_OK,
+    responses={
+        500: {"description": "Internal server error"},
+    },
+    summary="Get food categories with average nutrients",
+    description="Retrieve all food categories with average nutritional values for visualization",
+)
+async def get_food_categories(
+    exclude_empty: bool = Query(
+        True, description="Whether to exclude categories with null/empty values"
+    ),
+    db: AsyncSession = Depends(get_async_db),
+):
+    """Retrieve all food categories with their average nutritional values.
+
+    This endpoint returns a list of all food categories in the database,
+    along with the average nutritional values for each category. This is
+    useful for visualization in the frontend.
+
+    The nutritional values are calculated as the average of all food items
+    within each category. The response includes common macronutrients that
+    are important for dietary analysis and visualization.
+
+    Args:
+        exclude_empty: Whether to exclude categories with null/empty values (default: True)
+        db: Database session dependency
+
+    Returns:
+        List of food categories with their average nutrient values
+
+    Raises:
+        HTTPException: If an error occurs during database retrieval
+    """
+    try:
+        category_nutrients = await food_nutrient_crud.get_avg_nutrients_by_category(
+            db, exclude_empty=exclude_empty
+        )
+
+        return FoodCategoriesResponse(categories=category_nutrients)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error retrieving food categories: {str(e)}",
         )
 
 
