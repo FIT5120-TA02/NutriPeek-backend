@@ -8,7 +8,12 @@ from src.app.core.exceptions.custom import ResourceNotFoundError
 from src.app.crud.crud_daily_nutrient_intake import daily_nutrient_intake_crud
 from src.app.crud.crud_food_nutrients import food_nutrient_crud
 from src.app.models.food_nutrient import FoodNutrient
-from src.app.schemas.nutrient import NutrientGapResponse, NutrientInfo
+from src.app.schemas.nutrient import (
+    NutrientGapResponse,
+    NutrientInfo,
+    NutrientIntakeInfo,
+    NutrientIntakeResponse,
+)
 
 
 class NutrientService:
@@ -72,6 +77,60 @@ class NutrientService:
             excess_nutrients=excess_nutrients,
             total_calories=total_calories,
         )
+
+    @staticmethod
+    async def get_required_nutrient_intake(
+        db: AsyncSession, age: int, gender: str, nutrient_names: List[str] = None
+    ) -> NutrientIntakeResponse:
+        """Get the required daily nutrient intake for specific nutrients based on age and gender.
+
+        Args:
+            db: Database session
+            age: Age of the child
+            gender: Gender of the child (boy/girl)
+            nutrient_names: List of specific nutrient names to retrieve (optional)
+                If None, retrieves all nutrients
+
+        Returns:
+            Required nutrient intake information
+
+        Raises:
+            ResourceNotFoundError: If no recommended intake data is found for the
+                specified age and gender
+        """
+        # Get recommended nutrient intakes for the child's age and gender
+        recommended_intakes = await daily_nutrient_intake_crud.get_by_age_and_gender(
+            db, age=age, gender=gender
+        )
+
+        if not recommended_intakes:
+            raise ResourceNotFoundError(
+                f"No recommended nutrient intake data found for age {age} and gender {gender}"
+            )
+
+        # Define the list of nutrients we specifically want to include
+        # If nutrient_names is None, this will be used as a filter
+        specific_nutrients = nutrient_names or [
+            "Energy(a)",
+            "Protein",
+            "Total Fat(c)",
+            "Carbohydrate(c)",
+            "Dietary Fibre",
+        ]
+
+        # Create a dictionary of nutrient intake information
+        nutrient_intakes = {}
+        for recommendation in recommended_intakes:
+            # Only include specific nutrients if requested
+            if recommendation.nutrient in specific_nutrients:
+                nutrient_intakes[recommendation.nutrient] = NutrientIntakeInfo(
+                    name=recommendation.nutrient,
+                    recommended_intake=recommendation.intake,
+                    unit=recommendation.unit,
+                    category=recommendation.category,
+                )
+
+        return NutrientIntakeResponse(nutrient_intakes=nutrient_intakes)
 
     @staticmethod
     async def get_food_nutrients_by_ids(

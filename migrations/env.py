@@ -44,6 +44,11 @@ try:
         database_url = str(settings.DATABASE_URL) if settings.DATABASE_URL else None
     print(f"DATABASE_URL: {database_url}")
 
+    # Convert asyncpg URL to standard PostgreSQL URL if needed
+    if database_url and "asyncpg" in database_url:
+        database_url = database_url.replace("postgresql+asyncpg", "postgresql")
+        logger.info("Converted asyncpg URL to standard PostgreSQL URL for Alembic")
+
     # Log the database URL for debugging (mask sensitive parts)
     if database_url:
         db_url_parts = database_url.split("@")

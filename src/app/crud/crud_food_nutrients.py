@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.app.crud.async_base import AsyncCRUDBase
 from src.app.models.food_nutrient import FoodNutrient
+from src.app.schemas.food import FoodCategoryAvgNutrients
 from src.app.schemas.food_detection import FoodNutrientSummary
 
 
@@ -182,6 +183,64 @@ class FoodNutrientCRUD(AsyncCRUDBase[FoodNutrient, None, None]):
             carbs_with_sugar_alcohols_g=nutrient.carbs_with_sugar_alcohols_g,
             dietary_fibre_g=nutrient.dietary_fibre_g,
         )
+
+    async def get_avg_nutrients_by_category(
+        self, db: AsyncSession, *, exclude_empty: bool = True
+    ) -> List[FoodCategoryAvgNutrients]:
+        """Get average nutritional values grouped by food category.
+
+        Calculates the average of important nutritional values for each food category.
+
+        Args:
+            db: Database session
+            exclude_empty: Whether to exclude categories with null/empty values
+
+        Returns:
+            List of food categories with their average nutrient values
+        """
+        # Define the query to get average nutrition values grouped by category
+        query = (
+            select(
+                self.model.food_category,
+                func.count(self.model.id).label("count"),
+                func.avg(self.model.energy_with_fibre_kj).label("energy_with_fibre_kj"),
+                func.avg(self.model.protein_g).label("protein_g"),
+                func.avg(self.model.total_fat_g).label("total_fat_g"),
+                func.avg(self.model.carbs_with_sugar_alcohols_g).label(
+                    "carbs_with_sugar_alcohols_g"
+                ),
+                func.avg(self.model.dietary_fibre_g).label("dietary_fibre_g"),
+                func.avg(self.model.sodium_mg).label("sodium_mg"),
+            )
+            .where(self.model.food_category.isnot(None))
+            .group_by(self.model.food_category)
+            .order_by(self.model.food_category)
+        )
+
+        # If excluding empty categories, add the filter condition
+        if exclude_empty:
+            query = query.where(self.model.food_category != "")
+
+        result = await db.execute(query)
+        rows = result.all()
+
+        # Convert the query results to a list of FoodCategoryAvgNutrients objects
+        category_nutrients = []
+        for row in rows:
+            category_nutrients.append(
+                FoodCategoryAvgNutrients(
+                    food_category=row.food_category,
+                    count=row.count,
+                    energy_with_fibre_kj=row.energy_with_fibre_kj,
+                    protein_g=row.protein_g,
+                    total_fat_g=row.total_fat_g,
+                    carbs_with_sugar_alcohols_g=row.carbs_with_sugar_alcohols_g,
+                    dietary_fibre_g=row.dietary_fibre_g,
+                    sodium_mg=row.sodium_mg,
+                )
+            )
+
+        return category_nutrients
 
 
 # Create a singleton instance
