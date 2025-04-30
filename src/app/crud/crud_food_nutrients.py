@@ -2,7 +2,7 @@
 
 from typing import Dict, List, Tuple
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.app.crud.async_base import AsyncCRUDBase
@@ -241,6 +241,45 @@ class FoodNutrientCRUD(AsyncCRUDBase[FoodNutrient, None, None]):
             )
 
         return category_nutrients
+
+    async def get_food_by_nutrient(
+        self, db: AsyncSession, *, nutrient_column: str, limit: int = 5
+    ) -> List[Dict[str, str]]:
+        """Get foods with highest values for a specific nutrient.
+
+        Args:
+            db: Database session
+            nutrient_column: The nutrient column name to sort by
+            limit: Maximum number of results to return
+
+        Returns:
+            List of dictionaries containing food id and category
+
+        Raises:
+            ValueError: If the nutrient column is invalid
+        """
+        try:
+            # Using text() is necessary for dynamic column names
+            # but we should validate the column name to prevent SQL injection
+            if not hasattr(self.model, nutrient_column):
+                raise ValueError(f"Invalid nutrient column: {nutrient_column}")
+
+            query = text(
+                f"""
+                SELECT id, food_category, {nutrient_column}
+                FROM food_nutrient
+                WHERE {nutrient_column} IS NOT NULL AND food_category IS NOT NULL
+                ORDER BY {nutrient_column} DESC
+                LIMIT :limit
+            """
+            )
+
+            result = await db.execute(query, {"limit": limit})
+            rows = result.fetchall()
+            return [{"id": row.id, "food_category": row.food_category} for row in rows]
+        except Exception as e:
+            await db.rollback()
+            raise ValueError(f"Error fetching foods by nutrient: {str(e)}")
 
 
 # Create a singleton instance
