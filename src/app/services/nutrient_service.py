@@ -313,7 +313,7 @@ class NutrientService:
                 excess_nutrients.append(nutrient_name)
 
         return nutrient_gaps, missing_nutrients, excess_nutrients, total_calories
-    
+
     @staticmethod
     async def recommend_food_by_nutrient(
         db: AsyncSession,
