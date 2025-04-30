@@ -151,5 +151,3 @@ async def recommend_food(
         return foods
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to recommend food: {e}")
-
-
