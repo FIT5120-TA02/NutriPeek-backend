@@ -84,3 +84,10 @@ class FoodCategoriesResponse(BaseModel):
     categories: List[FoodCategoryAvgNutrients] = Field(
         ..., description="List of food categories with their average nutrient values"
     )
+
+class FoodRecommendation(BaseModel):
+    """Schema for food recommended based on specific nutrient content."""
+
+    id: str = Field(..., description="Unique identifier of the food item")
+    food_category: str = Field(..., description="Name of the food item")
+

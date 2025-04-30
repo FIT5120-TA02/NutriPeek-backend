@@ -13,6 +13,10 @@ from src.app.schemas.nutrient import (
 )
 from src.app.services.nutrient_service import nutrient_service
 
+from typing import List
+from src.app.schemas.food import FoodRecommendation
+
+
 router = APIRouter(prefix="/nutrient", tags=["nutrient"])
 
 
@@ -125,3 +129,28 @@ async def get_nutrient_intake(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error retrieving required nutrient intake: {str(e)}",
         )
+
+
+@router.get(
+    "/recommend-food",
+    response_model=List[FoodRecommendation],
+    summary="Recommend food rich in a specified nutrient",
+    description="Given a nutrient field (e.g., potassium_mg), recommend foods highest in that nutrient.",
+)
+async def recommend_food(
+    nutrient_name: str,
+    limit: int = 10,
+    db: AsyncSession = Depends(get_async_db),
+):
+    try:
+        foods = await nutrient_service.recommend_food_by_nutrient(
+            db=db,
+            nutrient_column=nutrient_name,
+            limit=limit,
+        )
+        return foods
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to recommend food: {e}")
+
+
+
