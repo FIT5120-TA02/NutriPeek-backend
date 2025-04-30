@@ -81,6 +81,20 @@
             },
             "envFile": "${workspaceFolder}/env/dev.env",
             "cwd": "${workspaceFolder}"
-        }
+        },
+        {
+            "name": "Script: Populate Food Category Fun Facts",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "scripts.python.populate_food_category_fun_facts",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "envFile": "${workspaceFolder}/env/dev.env",
+            "cwd": "${workspaceFolder}"
+        },
     ]
 }

@@ -3,8 +3,6 @@
 from typing import Dict, List, Tuple
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text
-
 
 from src.app.core.exceptions.custom import ResourceNotFoundError
 from src.app.crud.crud_daily_nutrient_intake import daily_nutrient_intake_crud
@@ -316,26 +314,32 @@ class NutrientService:
 
     @staticmethod
     async def recommend_food_by_nutrient(
-        db: AsyncSession,
-        nutrient_column: str,
-        limit: int = 5
+        db: AsyncSession, nutrient_column: str, limit: int = 5
     ) -> List[Dict[str, str]]:
+        """Recommend foods high in a specific nutrient.
+
+        Args:
+            db: Database session
+            nutrient_column: The nutrient column to filter and sort by
+            limit: Maximum number of results to return
+
+        Returns:
+            List of dictionaries containing food id and category
+
+        Raises:
+            ValueError: If the nutrient column is invalid or if there's an error
+                retrieving the data
+        """
         try:
-            query = text(f"""
-                SELECT id, food_category, {nutrient_column}
-                FROM food_nutrient
-                WHERE {nutrient_column} IS NOT NULL AND food_category IS NOT NULL
-                ORDER BY {nutrient_column} DESC
-                LIMIT :limit
-            """)
-            result = await db.execute(query, {"limit": limit})
-            await db.commit()
-            rows = result.fetchall()
-            return [{"id": row.id, "food_category": row.food_category} for row in rows]
-        except Exception as e:
-            await db.rollback()
-            print(f"[ERROR] Failed to recommend food for '{nutrient_column}':", e)
-            return []
+            return await food_nutrient_crud.get_food_by_nutrient(
+                db=db, nutrient_column=nutrient_column, limit=limit
+            )
+        except ValueError as e:
+            # Log error and re-raise with more context
+            print(f"[ERROR] Failed to recommend food for '{nutrient_column}': {e}")
+            raise ValueError(
+                f"Failed to recommend foods high in '{nutrient_column}': {e}"
+            )
 
 
 # Create a singleton instance

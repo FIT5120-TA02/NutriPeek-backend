@@ -1,10 +1,13 @@
 """Nutrient API endpoints for calculating nutritional gaps."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import List
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.app.api.dependencies import get_async_db
 from src.app.core.exceptions.custom import ResourceNotFoundError
+from src.app.schemas.food import FoodRecommendation
 from src.app.schemas.nutrient import (
     ChildProfile,
     NutrientGapRequest,
@@ -12,10 +15,6 @@ from src.app.schemas.nutrient import (
     NutrientIntakeResponse,
 )
 from src.app.services.nutrient_service import nutrient_service
-
-from typing import List
-from src.app.schemas.food import FoodRecommendation
-
 
 router = APIRouter(prefix="/nutrient", tags=["nutrient"])
 
@@ -134,14 +133,43 @@ async def get_nutrient_intake(
 @router.get(
     "/recommend-food",
     response_model=List[FoodRecommendation],
-    summary="Recommend food rich in a specified nutrient",
-    description="Given a nutrient field (e.g., potassium_mg), recommend foods highest in that nutrient.",
+    status_code=status.HTTP_200_OK,
+    summary="Recommend foods rich in a specific nutrient",
+    description="Returns a list of food categories with highest values for the specified nutrient.",
+    responses={
+        400: {"description": "Invalid nutrient column name provided"},
+        422: {"description": "Validation error in request parameters"},
+        500: {"description": "Internal server error"},
+    },
 )
 async def recommend_food(
-    nutrient_name: str,
-    limit: int = 10,
+    nutrient_name: str = Query(
+        ...,
+        description="Column name of the nutrient (e.g., 'iron_mg', 'vitamin_c_mg', 'protein_g')",
+        example="protein_g",
+    ),
+    limit: int = Query(
+        10, ge=1, le=50, description="Maximum number of food recommendations to return"
+    ),
     db: AsyncSession = Depends(get_async_db),
-):
+) -> List[FoodRecommendation]:
+    """Recommend foods rich in a specific nutrient.
+
+    This endpoint analyzes the food database and returns food categories
+    that have the highest values for the specified nutrient.
+
+    Args:
+        nutrient_name: Column name of the nutrient (e.g., 'iron_mg')
+        limit: Maximum number of food recommendations to return
+        db: Database session dependency
+
+    Returns:
+        List of food recommendations with their IDs and categories
+
+    Raises:
+        HTTPException: If the nutrient column is invalid or if there's an error
+            retrieving the data
+    """
     try:
         foods = await nutrient_service.recommend_food_by_nutrient(
             db=db,
@@ -149,5 +177,10 @@ async def recommend_food(
             limit=limit,
         )
         return foods
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to recommend food: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to recommend food: {str(e)}",
+        )

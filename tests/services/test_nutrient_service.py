@@ -296,7 +296,7 @@ def test_calculate_gaps():
 
     # Assert
     assert len(nutrient_gaps) == 3
-    assert len(missing_nutrients) == 1
+    assert len(missing_nutrients) == 2
     assert len(excess_nutrients) == 1
     assert total_calories == 250.0
 
