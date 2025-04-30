@@ -3,6 +3,8 @@
 from typing import Dict, List, Tuple
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
+
 
 from src.app.core.exceptions.custom import ResourceNotFoundError
 from src.app.crud.crud_daily_nutrient_intake import daily_nutrient_intake_crud
@@ -70,13 +72,17 @@ class NutrientService:
         nutrient_gaps, missing_nutrients, excess_nutrients, total_calories = (
             NutrientService.calculate_gaps(recommended_intakes, nutrient_intakes)
         )
+        try:
 
-        return NutrientGapResponse(
-            nutrient_gaps=nutrient_gaps,
-            missing_nutrients=missing_nutrients,
-            excess_nutrients=excess_nutrients,
-            total_calories=total_calories,
-        )
+            return NutrientGapResponse(
+                nutrient_gaps=nutrient_gaps,
+                missing_nutrients=missing_nutrients,
+                excess_nutrients=excess_nutrients,
+                total_calories=total_calories,
+            )
+        except Exception as e:
+            print("[ERROR] Failed to calculate nutrient gaps:", e)
+            raise
 
     @staticmethod
     async def get_required_nutrient_intake(
@@ -301,12 +307,35 @@ class NutrientService:
             nutrient_gaps[nutrient_name] = nutrient_info
 
             # Check if the nutrient is missing or in excess
-            if current_amount == 0:
+            if recommended_amount > 0 and gap_percentage >= 5:
                 missing_nutrients.append(nutrient_name)
             elif gap < 0:  # negative gap means excess
                 excess_nutrients.append(nutrient_name)
 
         return nutrient_gaps, missing_nutrients, excess_nutrients, total_calories
+
+    @staticmethod
+    async def recommend_food_by_nutrient(
+        db: AsyncSession,
+        nutrient_column: str,
+        limit: int = 5
+    ) -> List[Dict[str, str]]:
+        try:
+            query = text(f"""
+                SELECT id, food_category, {nutrient_column}
+                FROM food_nutrient
+                WHERE {nutrient_column} IS NOT NULL AND food_category IS NOT NULL
+                ORDER BY {nutrient_column} DESC
+                LIMIT :limit
+            """)
+            result = await db.execute(query, {"limit": limit})
+            await db.commit()
+            rows = result.fetchall()
+            return [{"id": row.id, "food_category": row.food_category} for row in rows]
+        except Exception as e:
+            await db.rollback()
+            print(f"[ERROR] Failed to recommend food for '{nutrient_column}':", e)
+            return []
 
 
 # Create a singleton instance
