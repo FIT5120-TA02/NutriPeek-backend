@@ -8,6 +8,14 @@ from src.app.schemas.activity import (
     PALCalculationRequest,
     PALCalculationResponse,
 )
+from src.app.schemas.child_energy_requirement import (
+    ChildEnergyRequirementCreate,
+    ChildEnergyRequirementInDB,
+    ChildEnergyRequirementResponse,
+    ChildEnergyRequirementUpdate,
+    FindNearestPALRequest,
+    FindNearestPALResponse,
+)
 from src.app.schemas.food import (
     FoodAutocompleteResponse,
     FoodCategoriesResponse,
@@ -55,6 +63,13 @@ __all__ = [
     "METyLevelResponse",
     "PALCalculationRequest",
     "PALCalculationResponse",
+    # Child Energy Requirement schemas
+    "ChildEnergyRequirementCreate",
+    "ChildEnergyRequirementInDB",
+    "ChildEnergyRequirementResponse",
+    "ChildEnergyRequirementUpdate",
+    "FindNearestPALRequest",
+    "FindNearestPALResponse",
     # Food schemas
     "FoodAutocompleteResponse",
     "FoodCategoryAvgNutrients",
