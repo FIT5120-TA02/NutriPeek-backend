@@ -1,6 +1,6 @@
 """Schemas for food API endpoints."""
 
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -90,5 +90,16 @@ class FoodRecommendation(BaseModel):
     """Schema for food recommended based on specific nutrient content."""
 
     id: str = Field(..., description="Unique identifier of the food item")
-    food_category: str = Field(..., description="Name of the food item")
+    food_name: str = Field(..., description="Name of the food item")
+    food_category: str = Field(
+        ..., description="Category of the food item for icon display"
+    )
     nutrient_value: float = Field(..., description="Value of the specified nutrient")
+    nutrients: Dict[str, float] = Field(
+        {}, description="Complete nutritional profile of the food item"
+    )
+
+    class ConfigDict:
+        """Pydantic configuration."""
+
+        from_attributes = True

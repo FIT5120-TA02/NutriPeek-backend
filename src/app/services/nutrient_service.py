@@ -1,9 +1,8 @@
 """Service for nutrient-related operations."""
 
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Any, List, Dict
 
 from src.app.core.exceptions.custom import ResourceNotFoundError
 from src.app.crud.crud_daily_nutrient_intake import daily_nutrient_intake_crud
@@ -317,25 +316,32 @@ class NutrientService:
     async def recommend_food_by_nutrient(
         db: AsyncSession, nutrient_column: str, limit: int = 5
     ) -> List[Dict[str, Any]]:
+        """Get foods with highest values for a specific nutrient and their full nutrition data.
+
+        This method retrieves food items that have the highest values for
+        the specified nutrient and returns them with their complete nutritional
+        information for a comprehensive view of their nutritional profile.
+
+        Args:
+            db: Database session
+            nutrient_column: The nutrient column name to sort by
+            limit: Maximum number of results to return
+
+        Returns:
+            List of dictionaries with food information and complete nutrient values
+
+        Raises:
+            ValueError: If there's an error or the nutrient column is invalid
+        """
         try:
+            # Fetch foods with highest values for the specified nutrient
             food_items = await food_nutrient_crud.get_food_by_nutrient(
                 db=db, nutrient_column=nutrient_column, limit=limit
             )
 
-            enriched = []
-            for item in food_items:
-                nutrients = {
-                    k: v for k, v in item.items()
-                    if isinstance(v, (int, float)) and k not in {"id", "food_category", "created_at", "updated_at"}
-                }
-
-                enriched.append({
-                    "food_category": item["food_category"],
-                    "id": item["id"],
-                    "nutrient_value": item.get("nutrient", 0),
-                    "nutrients": nutrients
-                })
-            return enriched
+            # The CRUD method now returns data in the correct format, so we can return it directly
+            # Each item already contains id, food_name, food_category, nutrient_value, and nutrients
+            return food_items
 
         except ValueError as e:
             print(f"[ERROR] Failed to recommend food for '{nutrient_column}': {e}")
