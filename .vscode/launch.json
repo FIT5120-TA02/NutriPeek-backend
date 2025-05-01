@@ -110,5 +110,19 @@
             "envFile": "${workspaceFolder}/env/dev.env",
             "cwd": "${workspaceFolder}"
         },
+        {
+            "name": "Script: Populate Child Energy Requirement",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "scripts.python.populate_child_energy_requirements",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "envFile": "${workspaceFolder}/env/dev.env",
+            "cwd": "${workspaceFolder}"
+        },
     ]
 }
