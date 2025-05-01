@@ -91,3 +91,4 @@ class FoodRecommendation(BaseModel):
 
     id: str = Field(..., description="Unique identifier of the food item")
     food_category: str = Field(..., description="Name of the food item")
+    nutrient_value: float = Field(..., description="Value of the specified nutrient")

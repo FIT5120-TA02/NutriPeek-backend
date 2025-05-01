@@ -3,6 +3,7 @@
 from typing import Dict, List, Tuple
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Any, List, Dict
 
 from src.app.core.exceptions.custom import ResourceNotFoundError
 from src.app.crud.crud_daily_nutrient_intake import daily_nutrient_intake_crud
@@ -315,27 +316,28 @@ class NutrientService:
     @staticmethod
     async def recommend_food_by_nutrient(
         db: AsyncSession, nutrient_column: str, limit: int = 5
-    ) -> List[Dict[str, str]]:
-        """Recommend foods high in a specific nutrient.
-
-        Args:
-            db: Database session
-            nutrient_column: The nutrient column to filter and sort by
-            limit: Maximum number of results to return
-
-        Returns:
-            List of dictionaries containing food id and category
-
-        Raises:
-            ValueError: If the nutrient column is invalid or if there's an error
-                retrieving the data
-        """
+    ) -> List[Dict[str, Any]]:
         try:
-            return await food_nutrient_crud.get_food_by_nutrient(
+            food_items = await food_nutrient_crud.get_food_by_nutrient(
                 db=db, nutrient_column=nutrient_column, limit=limit
             )
+
+            enriched = []
+            for item in food_items:
+                nutrients = {
+                    k: v for k, v in item.items()
+                    if isinstance(v, (int, float)) and k not in {"id", "food_category", "created_at", "updated_at"}
+                }
+
+                enriched.append({
+                    "food_category": item["food_category"],
+                    "id": item["id"],
+                    "nutrient_value": item.get("nutrient", 0),
+                    "nutrients": nutrients
+                })
+            return enriched
+
         except ValueError as e:
-            # Log error and re-raise with more context
             print(f"[ERROR] Failed to recommend food for '{nutrient_column}': {e}")
             raise ValueError(
                 f"Failed to recommend foods high in '{nutrient_column}': {e}"

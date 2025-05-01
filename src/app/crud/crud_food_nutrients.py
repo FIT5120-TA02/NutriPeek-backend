@@ -266,7 +266,7 @@ class FoodNutrientCRUD(AsyncCRUDBase[FoodNutrient, None, None]):
 
             query = text(
                 f"""
-                SELECT id, food_category, {nutrient_column}
+                SELECT id, food_category, {nutrient_column} AS nutrient
                 FROM food_nutrient
                 WHERE {nutrient_column} IS NOT NULL AND food_category IS NOT NULL
                 ORDER BY {nutrient_column} DESC
@@ -276,7 +276,7 @@ class FoodNutrientCRUD(AsyncCRUDBase[FoodNutrient, None, None]):
 
             result = await db.execute(query, {"limit": limit})
             rows = result.fetchall()
-            return [{"id": row.id, "food_category": row.food_category} for row in rows]
+            return [{"id": row.id, "food_category": row.food_category, "nutrient": row.nutrient} for row in rows]
         except Exception as e:
             await db.rollback()
             raise ValueError(f"Error fetching foods by nutrient: {str(e)}")
