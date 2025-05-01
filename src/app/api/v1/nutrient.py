@@ -16,7 +16,6 @@ from src.app.schemas.nutrient import (
 )
 from src.app.services.nutrient_service import nutrient_service
 
-
 router = APIRouter(prefix="/nutrient", tags=["nutrient"])
 
 
@@ -135,8 +134,14 @@ async def get_nutrient_intake(
     "/recommend-food",
     response_model=List[FoodRecommendation],
     status_code=status.HTTP_200_OK,
-    summary="Recommend foods rich in a specific nutrient",
-    description="Returns a list of food categories with highest values for the specified nutrient.",
+    summary="Recommend foods rich in a specific nutrient with complete nutritional profiles",
+    description=(
+        "Returns a list of food items with the highest values for the specified nutrient. "
+        "The food_category is used for displaying icons in the frontend, while food_name "
+        "provides the actual food name to be shown to users. "
+        "Each food item includes its complete nutritional profile in the 'nutrients' field, "
+        "allowing for comprehensive nutritional analysis beyond just the requested nutrient."
+    ),
     responses={
         400: {"description": "Invalid nutrient column name provided"},
         422: {"description": "Validation error in request parameters"},
@@ -154,30 +159,40 @@ async def recommend_food(
     ),
     db: AsyncSession = Depends(get_async_db),
 ) -> List[FoodRecommendation]:
-    """Recommend foods rich in a specific nutrient.
+    """Recommend foods rich in a specific nutrient with their complete nutritional profiles.
 
-    This endpoint analyzes the food database and returns food categories
-    that have the highest values for the specified nutrient.
+    This endpoint analyzes the food database and returns food items
+    that have the highest values for the specified nutrient along with
+    their complete nutritional information.
+
+    The response includes:
+    - food_name: The actual name of the food for display
+    - food_category: Category for icon representation in the frontend
+    - nutrient_value: Value of the specified nutrient used for sorting
+    - nutrients: A dictionary containing all available nutritional information
+
+    This comprehensive data allows users to consider the complete nutritional
+    profile of each food, not just its content of the selected nutrient.
 
     Args:
         nutrient_name: Column name of the nutrient (e.g., 'iron_mg')
-        limit: Maximum number of food recommendations to return
+        limit: Maximum number of results to return
         db: Database session dependency
 
     Returns:
-        List of food recommendations with their IDs and categories
+        List of food recommendations with their IDs, names, categories,
+        nutrient values, and complete nutritional profiles.
 
     Raises:
-        HTTPException: If the nutrient column is invalid or if there's an error
-            retrieving the data
+        HTTPException 400: If the nutrient column is invalid
+        HTTPException 500: If there's an unexpected error retrieving the data
     """
     try:
-        foods = await nutrient_service.recommend_food_by_nutrient(
+        return await nutrient_service.recommend_food_by_nutrient(
             db=db,
             nutrient_column=nutrient_name,
             limit=limit,
         )
-        return foods
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:

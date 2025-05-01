@@ -1,6 +1,6 @@
 """CRUD operations for FoodNutrient model."""
 
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 from sqlalchemy import func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -244,7 +244,7 @@ class FoodNutrientCRUD(AsyncCRUDBase[FoodNutrient, None, None]):
 
     async def get_food_by_nutrient(
         self, db: AsyncSession, *, nutrient_column: str, limit: int = 5
-    ) -> List[Dict[str, str]]:
+    ) -> List[Dict[str, Any]]:
         """Get foods with highest values for a specific nutrient.
 
         Args:
@@ -253,7 +253,7 @@ class FoodNutrientCRUD(AsyncCRUDBase[FoodNutrient, None, None]):
             limit: Maximum number of results to return
 
         Returns:
-            List of dictionaries containing food id and category
+            List of dictionaries containing food id, name, category and all nutrient values
 
         Raises:
             ValueError: If the nutrient column is invalid
@@ -264,19 +264,70 @@ class FoodNutrientCRUD(AsyncCRUDBase[FoodNutrient, None, None]):
             if not hasattr(self.model, nutrient_column):
                 raise ValueError(f"Invalid nutrient column: {nutrient_column}")
 
+            # Get IDs of the foods with highest values for the specified nutrient
             query = text(
                 f"""
-                SELECT id, food_category, {nutrient_column} AS nutrient
+                SELECT id
                 FROM food_nutrient
-                WHERE {nutrient_column} IS NOT NULL AND food_category IS NOT NULL
+                WHERE {nutrient_column} IS NOT NULL
+                  AND food_category IS NOT NULL
+                  AND food_name IS NOT NULL
                 ORDER BY {nutrient_column} DESC
                 LIMIT :limit
             """
             )
 
             result = await db.execute(query, {"limit": limit})
-            rows = result.fetchall()
-            return [{"id": row.id, "food_category": row.food_category, "nutrient": row.nutrient} for row in rows]
+            food_ids = [row.id for row in result.fetchall()]
+
+            # If no foods were found, return an empty list
+            if not food_ids:
+                return []
+
+            # Then fetch all nutrient data for these foods
+            query = select(self.model).where(self.model.id.in_(food_ids))
+            result = await db.execute(query)
+            foods = result.scalars().all()
+
+            # Create a list of dictionaries with all food data
+            food_items = []
+            for food in foods:
+                # Get all attributes of the food item
+                food_dict = {
+                    "id": food.id,
+                    "food_name": food.food_name,
+                    "food_category": food.food_category,
+                    # Include the specific nutrient value separately for sorting/display
+                    "nutrient_value": getattr(food, nutrient_column),
+                }
+
+                # Add all nutrient columns to a nested nutrients dictionary
+                nutrients = {}
+                for attr_name, attr_value in food.__dict__.items():
+                    # Skip non-nutrient attributes and null values
+                    if (
+                        attr_name.startswith("_")
+                        or attr_name
+                        in [
+                            "id",
+                            "food_name",
+                            "food_category",
+                            "food_detail",
+                            "created_at",
+                            "updated_at",
+                        ]
+                        or attr_value is None
+                    ):
+                        continue
+                    nutrients[attr_name] = attr_value
+
+                food_dict["nutrients"] = nutrients
+                food_items.append(food_dict)
+
+            # Sort the results by the nutrient value in descending order
+            # This ensures we maintain the same order as the original query
+            return sorted(food_items, key=lambda x: x["nutrient_value"], reverse=True)
+
         except Exception as e:
             await db.rollback()
             raise ValueError(f"Error fetching foods by nutrient: {str(e)}")
