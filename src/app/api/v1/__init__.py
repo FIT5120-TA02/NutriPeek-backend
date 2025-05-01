@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter
 
+from src.app.api.v1.activity import router as activity_router
 from src.app.api.v1.food import router as food_router
 from src.app.api.v1.food_category import router as food_category_router
 from src.app.api.v1.food_detection import router as food_detection_router
@@ -11,10 +12,12 @@ from src.app.api.v1.qrcode import router as qrcode_router
 
 api_router = APIRouter()
 
-# Include all routers
-api_router.include_router(health_router)
-api_router.include_router(food_detection_router)
-api_router.include_router(qrcode_router)
+api_router.include_router(activity_router)
 api_router.include_router(food_router)
 api_router.include_router(food_category_router)
+api_router.include_router(food_detection_router)
+api_router.include_router(health_router)
 api_router.include_router(nutrient_router)
+api_router.include_router(qrcode_router)
+
+__all__ = ["api_router"]
