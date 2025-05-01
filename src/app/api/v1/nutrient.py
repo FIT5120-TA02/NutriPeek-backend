@@ -16,6 +16,7 @@ from src.app.schemas.nutrient import (
 )
 from src.app.services.nutrient_service import nutrient_service
 
+
 router = APIRouter(prefix="/nutrient", tags=["nutrient"])
 
 
