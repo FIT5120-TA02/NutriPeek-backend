@@ -29,6 +29,7 @@ async def get_activities(
 ) -> ActivitiesResponse:
     """Get list of all available activities.
 
+
     Args:
         db: Database session
 
