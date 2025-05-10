@@ -90,3 +90,4 @@ ultralytics-thop==2.0.14
 urllib3==2.3.0
 uvicorn==0.23.2
 virtualenv==20.30.0
+websockets==15.0.1

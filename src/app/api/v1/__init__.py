@@ -2,26 +2,28 @@
 
 from fastapi import APIRouter
 
-from src.app.api.v1.activity import router as activity_router
-from src.app.api.v1.child_energy_requirement import (
-    router as child_energy_requirement_router,
+from src.app.api.v1 import (
+    activity,
+    child_energy_requirement,
+    food,
+    food_category,
+    food_detection,
+    health,
+    nutrient,
+    websocket,
 )
-from src.app.api.v1.food import router as food_router
-from src.app.api.v1.food_category import router as food_category_router
-from src.app.api.v1.food_detection import router as food_detection_router
-from src.app.api.v1.health import router as health_router
-from src.app.api.v1.nutrient import router as nutrient_router
-from src.app.api.v1.qrcode import router as qrcode_router
 
+# API v1 router
 api_router = APIRouter()
 
-api_router.include_router(activity_router)
-api_router.include_router(child_energy_requirement_router)
-api_router.include_router(food_router)
-api_router.include_router(food_category_router)
-api_router.include_router(food_detection_router)
-api_router.include_router(health_router)
-api_router.include_router(nutrient_router)
-api_router.include_router(qrcode_router)
+# Include routers
+api_router.include_router(activity.router)
+api_router.include_router(child_energy_requirement.router)
+api_router.include_router(food.router)
+api_router.include_router(food_category.router)
+api_router.include_router(food_detection.router)
+api_router.include_router(health.router)
+api_router.include_router(nutrient.router)
+api_router.include_router(websocket.router)
 
 __all__ = ["api_router"]
