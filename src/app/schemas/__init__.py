@@ -16,6 +16,10 @@ from src.app.schemas.child_energy_requirement import (
     FindNearestPALRequest,
     FindNearestPALResponse,
 )
+from src.app.schemas.file_conversion import (
+    FileConversionFormatsResponse,
+    FileConversionResponse,
+)
 from src.app.schemas.food import (
     FoodAutocompleteResponse,
     FoodCategoriesResponse,
@@ -123,4 +127,7 @@ __all__ = [
     "SessionUpdateMessage",
     "FileInfo",
     "MealType",
+    # File conversion schemas
+    "FileConversionFormatsResponse",
+    "FileConversionResponse",
 ]

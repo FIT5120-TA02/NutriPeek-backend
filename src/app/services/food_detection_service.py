@@ -9,8 +9,13 @@ import numpy as np
 from fastapi import UploadFile
 from ultralytics import YOLO
 
-from src.app.core.exceptions.custom import ModelLoadError, ProcessingError
+from src.app.core.exceptions.custom import (
+    ModelLoadError,
+    ProcessingError,
+    InvalidImageError,
+)
 from src.app.schemas.food_detection import FoodItemDetection
+from src.app.services.file_conversion_service import file_conversion_service
 
 
 class FoodDetectionService:
@@ -78,15 +83,32 @@ class FoodDetectionService:
 
         Raises:
             ProcessingError: If image processing fails
+            InvalidImageError: If the image cannot be decoded
         """
         try:
-            # Read image from upload
-            contents = await image_file.read()
-            nparr = np.frombuffer(contents, np.uint8)
+            # Check if we need to convert the image (handling HEIC, etc.)
+            mime_type = image_file.content_type or "application/octet-stream"
+            needs_conversion = file_conversion_service.is_conversion_needed(mime_type)
+
+            if needs_conversion:
+                # Convert the image to JPEG
+                image_bytes, _, _ = (
+                    await file_conversion_service.convert_image_if_needed(
+                        image_file, "JPEG", 90
+                    )
+                )
+                # Create numpy array directly from the converted bytes
+                nparr = np.frombuffer(image_bytes, np.uint8)
+            else:
+                # Read original image
+                contents = await image_file.read()
+                nparr = np.frombuffer(contents, np.uint8)
+
+            # Decode the image
             img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
             if img is None:
-                raise ProcessingError("Failed to decode image")
+                raise InvalidImageError("Failed to decode image")
 
             # Get image dimensions
             height, width = img.shape[:2]
@@ -136,6 +158,9 @@ class FoodDetectionService:
 
             return detections, processing_time_ms, width, height
 
+        except InvalidImageError as e:
+            # Re-raise specific error for invalid images
+            raise InvalidImageError(str(e))
         except Exception as e:
             raise ProcessingError(f"Error processing image: {str(e)}")
 
