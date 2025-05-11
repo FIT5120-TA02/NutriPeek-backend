@@ -16,6 +16,10 @@ from src.app.schemas.child_energy_requirement import (
     FindNearestPALRequest,
     FindNearestPALResponse,
 )
+from src.app.schemas.file_conversion import (
+    FileConversionFormatsResponse,
+    FileConversionResponse,
+)
 from src.app.schemas.food import (
     FoodAutocompleteResponse,
     FoodCategoriesResponse,
@@ -49,10 +53,19 @@ from src.app.schemas.nutrient import (
     NutrientIntakeInfo,
     NutrientIntakeResponse,
 )
-from src.app.schemas.qrcode import (
-    FileStatusResponse,
-    GenerateUploadQRResponse,
-    UploadImageResponse,
+from src.app.schemas.websocket_session import (
+    CreateSessionResponse,
+    FileInfo,
+    FilesListResponse,
+    FileTransferStatus,
+    FileUploadedMessage,
+    FileUploadResponse,
+    JoinSessionResponse,
+    MealType,
+    SessionStatus,
+    SessionStatusResponse,
+    SessionUpdateMessage,
+    WebSocketMessage,
 )
 
 __all__ = [
@@ -101,8 +114,20 @@ __all__ = [
     "NutrientGapResponse",
     "NutrientIntakeInfo",
     "NutrientIntakeResponse",
-    # QR code schemas
-    "GenerateUploadQRResponse",
-    "UploadImageResponse",
-    "FileStatusResponse",
+    # WebSocket session schemas
+    "CreateSessionResponse",
+    "FilesListResponse",
+    "FileUploadResponse",
+    "JoinSessionResponse",
+    "SessionStatusResponse",
+    "FileTransferStatus",
+    "SessionStatus",
+    "WebSocketMessage",
+    "FileUploadedMessage",
+    "SessionUpdateMessage",
+    "FileInfo",
+    "MealType",
+    # File conversion schemas
+    "FileConversionFormatsResponse",
+    "FileConversionResponse",
 ]
