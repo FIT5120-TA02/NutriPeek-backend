@@ -5,8 +5,8 @@ from src.app.services.file_conversion_service import FileConversionService
 from src.app.services.food_detection_service import FoodDetectionService
 from src.app.services.food_mapping_service import FoodMappingService
 from src.app.services.nutrient_service import NutrientService
+from src.app.services.seasonal_food_service import SeasonalFoodService
 from src.app.services.websocket_service import WebSocketService
-
 
 __all__ = [
     "ActivityService",
@@ -15,4 +15,6 @@ __all__ = [
     "NutrientService",
     "WebSocketService",
     "FileConversionService",
+    "SeasonalFoodService",
+    "seasonal_food_service",
 ]

@@ -124,5 +124,19 @@
             "envFile": "${workspaceFolder}/env/dev.env",
             "cwd": "${workspaceFolder}"
         },
+        {
+            "name": "Script: Populate Seasonal Food",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "scripts.python.populate_seasonal_food",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "envFile": "${workspaceFolder}/env/dev.env",
+            "cwd": "${workspaceFolder}"
+        },
     ]
 }
