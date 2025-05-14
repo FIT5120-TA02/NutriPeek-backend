@@ -16,6 +16,7 @@ from src.app.core.exceptions.custom import (
 )
 from src.app.schemas.food_detection import FoodItemDetection
 from src.app.services.file_conversion_service import file_conversion_service
+from src.app.constants.class_mapping import CLASS_ID_TO_CATEGORY
 
 
 class FoodDetectionService:
@@ -25,12 +26,12 @@ class FoodDetectionService:
     MODEL_BASE_DIR = Path("src/app/core/ml/models")
 
     # Default model to use if none specified
-    DEFAULT_MODEL = "yolo11n.pt"
+    DEFAULT_MODEL = "weights.pt"
 
     def __init__(
         self,
         model_name: Optional[str] = None,
-        confidence_threshold: float = 0.35,
+        confidence_threshold: float = 0.15,
     ):
         """Initialize the food detection service.
 
