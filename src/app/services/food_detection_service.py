@@ -25,12 +25,12 @@ class FoodDetectionService:
     MODEL_BASE_DIR = Path("src/app/core/ml/models")
 
     # Default model to use if none specified
-    DEFAULT_MODEL = "yolo11n.pt"
+    DEFAULT_MODEL = "weights.pt"
 
     def __init__(
         self,
         model_name: Optional[str] = None,
-        confidence_threshold: float = 0.35,
+        confidence_threshold: float = 0.15,
     ):
         """Initialize the food detection service.
 
