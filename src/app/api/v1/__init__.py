@@ -5,6 +5,7 @@ from fastapi import APIRouter
 from src.app.api.v1 import (
     activity,
     child_energy_requirement,
+    farmers_market,
     file_conversion,
     food,
     food_category,
@@ -29,5 +30,6 @@ api_router.include_router(nutrient.router)
 api_router.include_router(seasonal_food.router)
 api_router.include_router(websocket.router)
 api_router.include_router(file_conversion.router)
+api_router.include_router(farmers_market.router)
 
 __all__ = ["api_router"]

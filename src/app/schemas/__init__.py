@@ -16,6 +16,12 @@ from src.app.schemas.child_energy_requirement import (
     FindNearestPALRequest,
     FindNearestPALResponse,
 )
+from src.app.schemas.farmers_market import (
+    DayOfWeekEnum,
+    FarmersMarketBase,
+    FarmersMarketListResponse,
+    FarmersMarketResponse,
+)
 from src.app.schemas.file_conversion import (
     FileConversionFormatsResponse,
     FileConversionResponse,
@@ -53,6 +59,7 @@ from src.app.schemas.nutrient import (
     NutrientIntakeInfo,
     NutrientIntakeResponse,
 )
+from src.app.schemas.seasonal_food import SeasonalFoodListResponse, SeasonalFoodResponse
 from src.app.schemas.websocket_session import (
     CreateSessionResponse,
     FileInfo,
@@ -130,4 +137,12 @@ __all__ = [
     # File conversion schemas
     "FileConversionFormatsResponse",
     "FileConversionResponse",
+    # Seasonal food schemas
+    "SeasonalFoodListResponse",
+    "SeasonalFoodResponse",
+    # Farmers market schemas
+    "DayOfWeekEnum",
+    "FarmersMarketBase",
+    "FarmersMarketListResponse",
+    "FarmersMarketResponse",
 ]
