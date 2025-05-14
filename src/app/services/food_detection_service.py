@@ -25,7 +25,7 @@ class FoodDetectionService:
     MODEL_BASE_DIR = Path("src/app/core/ml/models")
 
     # Default model to use if none specified
-    DEFAULT_MODEL = "weights.pt"
+    DEFAULT_MODEL = "best.pt"
 
     def __init__(
         self,
