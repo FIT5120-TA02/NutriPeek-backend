@@ -16,7 +16,6 @@ from src.app.core.exceptions.custom import (
 )
 from src.app.schemas.food_detection import FoodItemDetection
 from src.app.services.file_conversion_service import file_conversion_service
-from src.app.constants.class_mapping import CLASS_ID_TO_CATEGORY
 
 
 class FoodDetectionService:
