@@ -6,7 +6,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.app.api.dependencies import get_async_db
-from src.app.schemas.seasonal_food import SeasonalFoodListResponse, SeasonalFoodResponse
+from src.app.schemas.seasonal_food import (
+    SeasonalFoodDetailResponse,
+    SeasonalFoodListResponse,
+    SeasonalFoodResponse,
+)
 from src.app.services.seasonal_food_service import seasonal_food_service
 
 router = APIRouter(prefix="/seasonal-food", tags=["seasonal-food"])
@@ -140,3 +144,33 @@ async def get_seasonal_food_by_id(
             detail="Seasonal food item not found",
         )
     return db_obj
+
+
+@router.get("/details/{food_name}", response_model=SeasonalFoodDetailResponse)
+async def get_seasonal_food_details(
+    food_name: str,
+    region: str = Query(..., description="Region for seasonal availability data"),
+    db: AsyncSession = Depends(get_async_db),
+) -> SeasonalFoodDetailResponse:
+    """Get detailed information about a seasonal food item including nutrient data.
+
+    This endpoint retrieves comprehensive information about a food item, including:
+    1. All months when the food is in season for the specified region
+    2. Nutritional information for the food item if available
+
+    Args:
+        food_name: Name of the food item to look up
+        region: Geographic region for seasonal availability data
+        db: Database session
+
+    Returns:
+        Detailed food information including seasonal availability and nutrients
+
+    Raises:
+        HTTPException: If no seasonal data is found for the specified food and region
+    """
+    result = await seasonal_food_service.get_seasonal_food_details(
+        db, food_name=food_name, region=region
+    )
+
+    return result

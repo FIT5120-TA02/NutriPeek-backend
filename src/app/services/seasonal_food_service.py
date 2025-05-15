@@ -5,7 +5,13 @@ from typing import Dict, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.app.crud.crud_seasonal_food import seasonal_food
-from src.app.schemas.seasonal_food import SeasonalFoodListResponse, SeasonalFoodResponse
+from src.app.schemas.seasonal_food import (
+    SeasonalAvailability,
+    SeasonalFoodDetailResponse,
+    SeasonalFoodListResponse,
+    SeasonalFoodResponse,
+)
+from src.app.services.food_mapping_service import food_mapping_service
 
 
 class SeasonalFoodService:
@@ -74,7 +80,7 @@ class SeasonalFoodService:
 
         return SeasonalFoodResponse(
             id=item.id,
-            food_name=item.food_name,
+            name=item.food_name,
             category=item.category,
             region=item.region,
             season=item.season,
@@ -107,6 +113,98 @@ class SeasonalFoodService:
         """
         return await seasonal_food.get_autocomplete_suggestions(
             db, query=query, limit=limit
+        )
+
+    def _convert_plural_to_singular(self, food_name: str) -> str:
+        """Convert plural food names to singular form for better mapping accuracy.
+
+        Applies simple rules to convert plural forms to singular:
+        1. Removes trailing 's' from words
+        2. Handles special cases for better accuracy
+
+        Args:
+            food_name: The food name to convert, potentially in plural form
+
+        Returns:
+            The food name converted to singular form
+        """
+        # Split the food name into words
+        words = food_name.split()
+
+        # Process each word
+        processed_words = []
+        for word in words:
+            # Skip short words (likely not nouns or relevant food names)
+            if len(word) <= 2:
+                processed_words.append(word)
+                continue
+
+            # Handle special cases (could be expanded with more rules)
+            if word.lower().endswith("ies"):
+                # berries -> berry
+                processed_word = word[:-3] + "y"
+            elif word.lower().endswith("es"):
+                # potatoes -> potato, tomatoes -> tomato
+                if word.lower().endswith("oes"):
+                    processed_word = word[:-2]
+                else:
+                    # peaches -> peach
+                    processed_word = word[:-2]
+            elif word.lower().endswith("s") and not word.lower().endswith("ss"):
+                # apples -> apple, but not process 'cress'
+                processed_word = word[:-1]
+            else:
+                # No plural form detected
+                processed_word = word
+
+            processed_words.append(processed_word)
+
+        # Rejoin the words
+        return " ".join(processed_words)
+
+    async def get_seasonal_food_details(
+        self, db: AsyncSession, *, food_name: str, region: str
+    ) -> SeasonalFoodDetailResponse:
+        """Get detailed seasonal food information including seasonal availability and nutrient data.
+
+        Retrieves all months when the specified food is in season for the given region,
+        and maps the food name to nutritional data.
+
+        Args:
+            db: Database session
+            food_name: Name of the food item
+            region: Geographic region
+
+        Returns:
+            SeasonalFoodDetailResponse object containing seasonal availability and nutrient information
+        """
+        # Get seasonal availability data
+        seasonal_data = await seasonal_food.get_seasonal_availability(
+            db, food_name=food_name, region=region
+        )
+
+        # Convert to Pydantic models
+        seasonal_availability = [SeasonalAvailability(**item) for item in seasonal_data]
+
+        # Preprocess the food name - convert from plural to singular for better mapping
+        singular_food_name = self._convert_plural_to_singular(food_name)
+
+        # Map food name to nutrient data using the singular form
+        mapped_items, unmapped = await food_mapping_service.map_food_items(
+            food_names=[singular_food_name]
+        )
+
+        # Extract nutrient data if available
+        nutrient_data = None
+        if singular_food_name in mapped_items:
+            nutrient_data = mapped_items[singular_food_name].nutrient_data
+
+        # Create and return the response object
+        return SeasonalFoodDetailResponse(
+            food_name=food_name,
+            region=region,
+            seasonal_availability=seasonal_availability,
+            nutrient_data=nutrient_data,
         )
 
 

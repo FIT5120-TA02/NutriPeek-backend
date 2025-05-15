@@ -131,5 +131,42 @@ class CRUDSeasonalFood(
         result = await db.execute(query)
         return result.scalars().all()
 
+    async def get_seasonal_availability(
+        self, db: AsyncSession, *, food_name: str, region: str
+    ) -> List[Dict[str, Any]]:
+        """Get seasonal availability data for a specific food item in a region.
+
+        Retrieves all records matching the food name and region, providing
+        information about when the food is in season.
+
+        Args:
+            db: Database session
+            food_name: Name of the food item to look up
+            region: Geographic region
+
+        Returns:
+            List of dictionaries containing season and month information
+        """
+        query = select(self.model).where(
+            (self.model.food_name == food_name.lower())
+            & (self.model.region == region.lower())
+        )
+
+        result = await db.execute(query)
+        items = result.scalars().all()
+
+        # Format the results
+        availability = []
+        for item in items:
+            availability.append(
+                {
+                    "season": item.season,
+                    "month": item.month,
+                    "category": item.category,
+                }
+            )
+
+        return availability
+
 
 seasonal_food = CRUDSeasonalFood(SeasonalFood)
