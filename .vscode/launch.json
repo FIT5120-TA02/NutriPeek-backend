@@ -124,5 +124,47 @@
             "envFile": "${workspaceFolder}/env/dev.env",
             "cwd": "${workspaceFolder}"
         },
+        {
+            "name": "Script: Populate Seasonal Food",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "scripts.python.populate_seasonal_food",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "envFile": "${workspaceFolder}/env/dev.env",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Script: Populate Farmers Market",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "scripts.python.populate_farmers_market",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "envFile": "${workspaceFolder}/env/dev.env",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Script: Google Lat Lang Finder",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "scripts.python.google_lat_lang_finder",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "envFile": "${workspaceFolder}/env/dev.env",
+            "cwd": "${workspaceFolder}"
+        },
     ]
 }
