@@ -133,7 +133,7 @@ class CRUDSeasonalFood(
 
     async def get_seasonal_availability(
         self, db: AsyncSession, *, food_name: str, region: str
-    ) -> List[Dict[str, Any]]:
+    ) -> tuple[List[Dict[str, Any]], str]:
         """Get seasonal availability data for a specific food item in a region.
 
         Retrieves all records matching the food name and region, providing
@@ -166,7 +166,10 @@ class CRUDSeasonalFood(
                 }
             )
 
-        return availability
+        return (
+            availability,
+            items[0].db_category,
+        )  # return the db_category of the first item
 
 
 seasonal_food = CRUDSeasonalFood(SeasonalFood)

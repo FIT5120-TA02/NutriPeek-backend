@@ -7,7 +7,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.app.api.dependencies import get_async_db
 from src.app.core.exceptions.custom import ResourceNotFoundError
-from src.app.schemas.food import FoodRecommendation
+from src.app.schemas.food import (
+    FoodRecommendation,
+    OptimizedFoodRecommendation,
+    OptimizedFoodRecommendationRequest,
+    SeasonalFoodRecommendationRequest,
+)
 from src.app.schemas.nutrient import (
     ChildProfile,
     NutrientGapRequest,
@@ -199,4 +204,134 @@ async def recommend_food(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to recommend food: {str(e)}",
+        )
+
+
+@router.post(
+    "/recommend-optimized-food",
+    response_model=List[OptimizedFoodRecommendation],
+    status_code=status.HTTP_200_OK,
+    summary="Recommend foods optimized to fill a specific nutrient gap",
+    description=(
+        "Returns foods with nutrient amounts that most efficiently help reach the target "
+        "nutrient level. Each recommendation includes how much of the food would be needed "
+        "to close the gap and what percentage of the gap it satisfies with a standard serving. "
+        "Foods are ranked by how practical they are to consume, prioritizing those that can "
+        "satisfy the gap with reasonable portion sizes."
+    ),
+    responses={
+        400: {"description": "Invalid nutrient column name or parameters provided"},
+        422: {"description": "Validation error in request parameters"},
+        500: {"description": "Internal server error"},
+    },
+)
+async def recommend_optimized_food(
+    request: OptimizedFoodRecommendationRequest,
+    db: AsyncSession = Depends(get_async_db),
+) -> List[OptimizedFoodRecommendation]:
+    """Recommend foods optimized to fill specific nutrient gaps.
+
+    This endpoint analyzes foods in the database and finds those with nutrient amounts
+    that would most efficiently help close the gap between current and target nutrient levels.
+    It calculates how much of each food would be needed and prioritizes foods that can
+    satisfy the gap with reasonable serving sizes (typically 50-200g).
+
+    The response includes:
+    - food_name: The name of the food
+    - food_category: Category for icon representation
+    - nutrient_value: Value of the specified nutrient per 100g
+    - amount_needed: How much of this food is needed to reach target (in grams)
+    - gap_satisfaction_percentage: What percentage of the gap one serving (100g) fills
+    - nutrients: Complete nutritional profile
+
+    Args:
+        request: Request containing nutrient name, target amount, and current amount
+        db: Database session dependency
+
+    Returns:
+        List of optimized food recommendations sorted by practicality for consumption
+
+    Raises:
+        HTTPException 400: If the nutrient column is invalid or parameters are invalid
+        HTTPException 500: If there's an unexpected error
+    """
+    try:
+        return await nutrient_service.recommend_optimized_food(
+            db=db,
+            nutrient_column=request.nutrient_name,
+            target_amount=request.target_amount,
+            current_amount=request.current_amount,
+            limit=request.limit,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to recommend optimized food: {str(e)}",
+        )
+
+
+@router.post(
+    "/recommend-seasonal-food",
+    response_model=List[FoodRecommendation],
+    status_code=status.HTTP_200_OK,
+    summary="Recommend foods rich in a specific nutrient based on seasonal availability",
+    description=(
+        "Returns seasonal foods that have the highest values for the specified nutrient. "
+        "Foods are filtered by region and either month or season to ensure they are currently "
+        "in season. Each recommendation includes the food's complete nutritional profile."
+    ),
+    responses={
+        400: {
+            "description": "Invalid nutrient column name, region, or seasonal parameters provided"
+        },
+        404: {"description": "No seasonal foods found for the given criteria"},
+        422: {"description": "Validation error in request parameters"},
+        500: {"description": "Internal server error"},
+    },
+)
+async def recommend_seasonal_food(
+    request: SeasonalFoodRecommendationRequest,
+    db: AsyncSession = Depends(get_async_db),
+) -> List[FoodRecommendation]:
+    """Recommend foods that are in season and rich in a specific nutrient.
+
+    This endpoint combines seasonal food availability with nutrient optimization.
+    It first finds foods that are currently in season based on the provided region
+    and either month or season, then identifies those with the highest values
+    for the specified nutrient.
+
+    The response includes:
+    - food_name: The name of the food
+    - food_category: Category for icon representation in the frontend
+    - nutrient_value: Value of the specified nutrient
+    - nutrients: Complete nutritional profile
+
+    Args:
+        request: Request containing nutrient name, region, seasonal filters, and limit
+        db: Database session dependency
+
+    Returns:
+        List of seasonal food recommendations rich in the specified nutrient
+
+    Raises:
+        HTTPException 400: If parameters are invalid or no seasonal foods are found
+        HTTPException 500: If there's an unexpected error processing the request
+    """
+    try:
+        return await nutrient_service.recommend_seasonal_food(
+            db=db,
+            nutrient_column=request.nutrient_name,
+            region=request.region,
+            month=request.month,
+            season=request.season,
+            limit=request.limit,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to recommend seasonal food: {str(e)}",
         )
