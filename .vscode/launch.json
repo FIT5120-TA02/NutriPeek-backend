@@ -180,5 +180,19 @@
             "envFile": "${workspaceFolder}/env/dev.env",
             "cwd": "${workspaceFolder}"
         },
+        {
+            "name": "Script: Clean Seasonal Food Duplicates",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "scripts.python.clean_seasonal_food_duplicates",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "envFile": "${workspaceFolder}/env/dev.env",
+            "cwd": "${workspaceFolder}"
+        },
     ]
 }

@@ -25,7 +25,6 @@ class FoodNutrient(Base, UUIDMixin, TimestampMixin):
         added_sugars_g: Added sugars content in grams
         free_sugars_g: Free sugars content in grams
         dietary_fibre_g: Dietary fibre content in grams
-        alcohol_g: Alcohol content in grams
         ash_g: Ash content in grams
         vitamin_a_retinol_ug: Vitamin A (retinol) content in micrograms
         beta_carotene_ug: Beta-carotene content in micrograms
@@ -53,7 +52,6 @@ class FoodNutrient(Base, UUIDMixin, TimestampMixin):
         selenium_ug: Selenium content in micrograms
         sodium_mg: Sodium content in milligrams
         zinc_mg: Zinc content in milligrams
-        caffeine_mg: Caffeine content in milligrams
         cholesterol_mg: Cholesterol content in milligrams
         tryptophan_mg: Tryptophan content in milligrams
         saturated_fat_g: Saturated fat content in grams
@@ -86,7 +84,6 @@ class FoodNutrient(Base, UUIDMixin, TimestampMixin):
     added_sugars_g: Mapped[float] = mapped_column(Float, nullable=True)
     free_sugars_g: Mapped[float] = mapped_column(Float, nullable=True)
     dietary_fibre_g: Mapped[float] = mapped_column(Float, nullable=True)
-    alcohol_g: Mapped[float] = mapped_column(Float, nullable=True)
     ash_g: Mapped[float] = mapped_column(Float, nullable=True)
     vitamin_a_retinol_ug: Mapped[float] = mapped_column(Float, nullable=True)
     beta_carotene_ug: Mapped[float] = mapped_column(Float, nullable=True)
@@ -114,7 +111,6 @@ class FoodNutrient(Base, UUIDMixin, TimestampMixin):
     selenium_ug: Mapped[float] = mapped_column(Float, nullable=True)
     sodium_mg: Mapped[float] = mapped_column(Float, nullable=True)
     zinc_mg: Mapped[float] = mapped_column(Float, nullable=True)
-    caffeine_mg: Mapped[float] = mapped_column(Float, nullable=True)
     cholesterol_mg: Mapped[float] = mapped_column(Float, nullable=True)
     tryptophan_mg: Mapped[float] = mapped_column(Float, nullable=True)
     saturated_fat_g: Mapped[float] = mapped_column(Float, nullable=True)
