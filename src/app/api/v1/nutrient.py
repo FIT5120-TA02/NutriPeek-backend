@@ -11,6 +11,7 @@ from src.app.schemas.food import (
     FoodRecommendation,
     OptimizedFoodRecommendation,
     OptimizedFoodRecommendationRequest,
+    SeasonalFoodRecommendationRequest,
 )
 from src.app.schemas.nutrient import (
     ChildProfile,
@@ -268,4 +269,69 @@ async def recommend_optimized_food(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to recommend optimized food: {str(e)}",
+        )
+
+
+@router.post(
+    "/recommend-seasonal-food",
+    response_model=List[FoodRecommendation],
+    status_code=status.HTTP_200_OK,
+    summary="Recommend foods rich in a specific nutrient based on seasonal availability",
+    description=(
+        "Returns seasonal foods that have the highest values for the specified nutrient. "
+        "Foods are filtered by region and either month or season to ensure they are currently "
+        "in season. Each recommendation includes the food's complete nutritional profile."
+    ),
+    responses={
+        400: {
+            "description": "Invalid nutrient column name, region, or seasonal parameters provided"
+        },
+        404: {"description": "No seasonal foods found for the given criteria"},
+        422: {"description": "Validation error in request parameters"},
+        500: {"description": "Internal server error"},
+    },
+)
+async def recommend_seasonal_food(
+    request: SeasonalFoodRecommendationRequest,
+    db: AsyncSession = Depends(get_async_db),
+) -> List[FoodRecommendation]:
+    """Recommend foods that are in season and rich in a specific nutrient.
+
+    This endpoint combines seasonal food availability with nutrient optimization.
+    It first finds foods that are currently in season based on the provided region
+    and either month or season, then identifies those with the highest values
+    for the specified nutrient.
+
+    The response includes:
+    - food_name: The name of the food
+    - food_category: Category for icon representation in the frontend
+    - nutrient_value: Value of the specified nutrient
+    - nutrients: Complete nutritional profile
+
+    Args:
+        request: Request containing nutrient name, region, seasonal filters, and limit
+        db: Database session dependency
+
+    Returns:
+        List of seasonal food recommendations rich in the specified nutrient
+
+    Raises:
+        HTTPException 400: If parameters are invalid or no seasonal foods are found
+        HTTPException 500: If there's an unexpected error processing the request
+    """
+    try:
+        return await nutrient_service.recommend_seasonal_food(
+            db=db,
+            nutrient_column=request.nutrient_name,
+            region=request.region,
+            month=request.month,
+            season=request.season,
+            limit=request.limit,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to recommend seasonal food: {str(e)}",
         )

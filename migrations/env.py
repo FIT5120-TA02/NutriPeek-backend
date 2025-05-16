@@ -38,11 +38,9 @@ try:
 
     # Get the database URL from environment variables
     database_url = os.getenv("DATABASE_URL")
-    print(f"DATABASE_URL: {database_url}")
     if not database_url:
         # Try to get it from settings
         database_url = str(settings.DATABASE_URL) if settings.DATABASE_URL else None
-    print(f"DATABASE_URL: {database_url}")
 
     # Convert asyncpg URL to standard PostgreSQL URL if needed
     if database_url and "asyncpg" in database_url:

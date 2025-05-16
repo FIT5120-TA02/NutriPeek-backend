@@ -2,7 +2,7 @@
 
 from typing import Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class FoodAutocompleteResponse(BaseModel):
@@ -143,3 +143,49 @@ class OptimizedFoodRecommendation(FoodRecommendation):
         description="Percentage of the nutrient gap this food satisfies",
         example=85.5,
     )
+
+
+class SeasonalFoodRecommendationRequest(BaseModel):
+    """Request for seasonal food recommendations based on nutrient content."""
+
+    nutrient_name: str = Field(
+        ...,
+        description="Column name of the nutrient (e.g., 'iron_mg', 'protein_g')",
+        example="protein_g",
+    )
+    region: str = Field(
+        ...,
+        description="Geographic region for seasonal availability",
+        example="australia",
+    )
+    month: Optional[str] = Field(
+        None,
+        description="Specific month for seasonal filtering (mutually exclusive with season)",
+        example="january",
+    )
+    season: Optional[str] = Field(
+        None,
+        description="Season for filtering (mutually exclusive with month)",
+        example="Summer",
+    )
+    limit: int = Field(
+        10, ge=1, le=50, description="Maximum number of food recommendations to return"
+    )
+
+    @field_validator("season")
+    def validate_not_both_month_and_season(cls, v, values):
+        """Validate that only one of month or season is provided."""
+        if v and "month" in values.data and values.data["month"]:
+            raise ValueError(
+                "Cannot provide both month and season. Please specify only one."
+            )
+        return v
+
+    @field_validator("month")
+    def validate_not_both_season_and_month(cls, v, values):
+        """Validate that only one of month or season is provided."""
+        if v and "season" in values.data and values.data["season"]:
+            raise ValueError(
+                "Cannot provide both month and season. Please specify only one."
+            )
+        return v

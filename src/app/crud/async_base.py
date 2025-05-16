@@ -57,6 +57,22 @@ class AsyncCRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         result = await db.execute(select(self.model).offset(skip).limit(limit))
         return result.scalars().all()
 
+    async def get_all(self, db: AsyncSession, *, limit: int = 1000) -> List[ModelType]:
+        """Get all records up to a limit.
+
+        This method retrieves all records of the model type without any filtering,
+        up to the specified limit.
+
+        Args:
+            db: Database session.
+            limit: Maximum number of records to return.
+
+        Returns:
+            List of all records up to the limit.
+        """
+        result = await db.execute(select(self.model).limit(limit))
+        return result.scalars().all()
+
     async def create(self, db: AsyncSession, *, obj_in: CreateSchemaType) -> ModelType:
         """Create a new record.
 

@@ -7,8 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.app.core.exceptions.custom import ResourceNotFoundError
 from src.app.crud.crud_daily_nutrient_intake import daily_nutrient_intake_crud
 from src.app.crud.crud_food_nutrients import food_nutrient_crud
+from src.app.crud.crud_seasonal_food import seasonal_food
 from src.app.models.food_nutrient import FoodNutrient
-from src.app.schemas.food import OptimizedFoodRecommendation
+from src.app.schemas.food import FoodRecommendation, OptimizedFoodRecommendation
 from src.app.schemas.nutrient import (
     NutrientGapResponse,
     NutrientInfo,
@@ -460,6 +461,189 @@ class NutrientService:
         except Exception as e:
             print(f"[ERROR] Unexpected error in food optimization: {e}")
             raise ValueError(f"Unexpected error in food optimization: {str(e)}")
+
+    @staticmethod
+    async def recommend_seasonal_food(
+        db: AsyncSession,
+        *,
+        nutrient_column: str,
+        region: str,
+        month: str = None,
+        season: str = None,
+        limit: int = 10,
+    ) -> List[FoodRecommendation]:
+        """Recommend seasonal foods rich in a specific nutrient.
+
+        This method combines seasonal food availability with nutrient optimization.
+        It first gets foods that are in season based on region and either month or season,
+        then filters them to find those with the highest values of the specified nutrient.
+
+        Args:
+            db: Database session
+            nutrient_column: The nutrient column name to sort by (e.g., 'iron_mg')
+            region: Geographic region for seasonal availability
+            month: Specific month for seasonal filtering (mutually exclusive with season)
+            season: Season for filtering (mutually exclusive with month)
+            limit: Maximum number of food recommendations to return
+
+        Returns:
+            List of seasonal food recommendations with their complete nutritional profiles,
+            sorted by the specified nutrient value (highest first)
+
+        Raises:
+            ValueError: If the nutrient column is invalid or if no seasonal foods are found
+        """
+        try:
+            # Validate that only one of month or season is provided
+            if month and season:
+                raise ValueError("Please provide either month or season, not both.")
+
+            # Get seasonal foods by region and month/season
+            filters = {"region": region.lower()}
+
+            if month:
+                filters["month"] = month.lower()
+            elif season:
+                filters["season"] = season
+            else:
+                # If neither is provided, default to all seasons
+                pass
+
+            # Get seasonal foods from the database
+            seasonal_items = await seasonal_food.get_filtered(
+                db=db,
+                filters=filters,
+                limit=500,  # Get more to ensure we have enough after filtering
+            )
+
+            if not seasonal_items:
+                raise ValueError(
+                    f"No seasonal foods found for region '{region}'"
+                    f"{f', month: {month}' if month else ''}"
+                    f"{f', season: {season}' if season else ''}"
+                )
+
+            # Extract unique db_categories to map to food nutrients
+            # We use a set to eliminate duplicates
+            db_categories = {
+                item.db_category.lower() for item in seasonal_items if item.db_category
+            }
+
+            if not db_categories:
+                raise ValueError("No valid food categories found for seasonal foods")
+
+            # Get all foods matching these categories for nutrient analysis
+            foods_with_nutrients = []
+
+            # For each category, get foods and their nutrient values using exact matching
+            for category in db_categories:
+                # First, try to get foods that exactly match the category
+                matching_foods = await food_nutrient_crud.search_by_exact_category(
+                    db=db, category=category, limit=50
+                )
+
+                # If no exact matches are found, try case-insensitive matching
+                if not matching_foods:
+                    # Try to get exact matches with capitalized first letter
+                    capitalized_category = category.capitalize()
+                    matching_foods = await food_nutrient_crud.search_by_exact_category(
+                        db=db, category=capitalized_category, limit=50
+                    )
+
+                # If still no matches, use fuzzy search as a fallback
+                if not matching_foods:
+                    matching_foods = await food_nutrient_crud.search_by_fuzzy_category(
+                        db=db, category=category, limit=20
+                    )
+
+                # Filter out foods where the specified nutrient is null
+                valid_foods = [
+                    food
+                    for food in matching_foods
+                    if hasattr(food, nutrient_column)
+                    and getattr(food, nutrient_column) is not None
+                ]
+
+                foods_with_nutrients.extend(valid_foods)
+
+            if not foods_with_nutrients:
+                # If we still don't have any foods, try another approach
+                # Get all food nutrients and filter manually by category similarity
+                all_foods = await food_nutrient_crud.get_all(db=db, limit=1000)
+                for food in all_foods:
+                    if food.food_category and any(
+                        category in food.food_category.lower()
+                        for category in db_categories
+                    ):
+                        if (
+                            hasattr(food, nutrient_column)
+                            and getattr(food, nutrient_column) is not None
+                        ):
+                            foods_with_nutrients.append(food)
+
+                if not foods_with_nutrients:
+                    raise ValueError(
+                        f"No foods found with nutrient '{nutrient_column}' for the given seasonal categories"
+                    )
+
+            # Sort foods by the specified nutrient value (highest first)
+            foods_with_nutrients.sort(
+                key=lambda food: getattr(food, nutrient_column) or 0, reverse=True
+            )
+
+            # Take top N foods
+            top_foods = foods_with_nutrients[:limit]
+
+            # Convert to FoodRecommendation format (matching format from recommend_food_by_nutrient)
+            recommendations = []
+
+            for food in top_foods:
+                # Get nutrient value for sorting/display
+                nutrient_value = getattr(food, nutrient_column) or 0
+
+                # Get all nutrient attributes for the food
+                nutrients = {}
+                for attr_name, attr_value in food.__dict__.items():
+                    # Skip non-nutrient attributes and null values
+                    if (
+                        attr_name.startswith("_")
+                        or attr_name
+                        in [
+                            "id",
+                            "food_name",
+                            "food_category",
+                            "food_detail",
+                            "created_at",
+                            "updated_at",
+                        ]
+                        or attr_value is None
+                    ):
+                        continue
+                    nutrients[attr_name] = attr_value
+
+                # Create recommendation object
+                recommendation = FoodRecommendation(
+                    id=food.id,
+                    food_name=food.food_name,
+                    food_category=food.food_category or "Unknown",
+                    nutrient_value=nutrient_value,
+                    nutrients=nutrients,
+                )
+
+                recommendations.append(recommendation)
+
+            return recommendations
+
+        except ValueError as e:
+            print(
+                f"[ERROR] Failed to recommend seasonal food for '{nutrient_column}': {e}"
+            )
+            raise ValueError(f"Failed to recommend seasonal foods: {str(e)}")
+        except Exception as e:
+            print(f"[ERROR] Unexpected error in seasonal food recommendation: {e}")
+            raise ValueError(
+                f"Unexpected error in seasonal food recommendation: {str(e)}"
+            )
 
 
 # Create a singleton instance
