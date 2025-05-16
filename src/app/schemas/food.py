@@ -103,3 +103,43 @@ class FoodRecommendation(BaseModel):
         """Pydantic configuration."""
 
         from_attributes = True
+
+
+class OptimizedFoodRecommendationRequest(BaseModel):
+    """Request for optimized food recommendations based on nutrient gaps."""
+
+    nutrient_name: str = Field(
+        ...,
+        description="Column name of the nutrient (e.g., 'iron_mg', 'protein_g')",
+        example="protein_g",
+    )
+    target_amount: float = Field(
+        ...,
+        description="The target amount of the nutrient to reach",
+        example=20.0,
+        gt=0,
+    )
+    current_amount: float = Field(
+        0.0,
+        description="The current amount of the nutrient already consumed",
+        example=5.0,
+        ge=0,
+    )
+    limit: int = Field(
+        10, ge=1, le=50, description="Maximum number of food recommendations to return"
+    )
+
+
+class OptimizedFoodRecommendation(FoodRecommendation):
+    """Optimized food recommendation with gap satisfaction information."""
+
+    amount_needed: float = Field(
+        ...,
+        description="Amount of this food needed to reach target nutrient level",
+        example=100.0,
+    )
+    gap_satisfaction_percentage: float = Field(
+        ...,
+        description="Percentage of the nutrient gap this food satisfies",
+        example=85.5,
+    )

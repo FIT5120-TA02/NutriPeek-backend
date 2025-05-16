@@ -8,6 +8,7 @@ from src.app.core.exceptions.custom import ResourceNotFoundError
 from src.app.crud.crud_daily_nutrient_intake import daily_nutrient_intake_crud
 from src.app.crud.crud_food_nutrients import food_nutrient_crud
 from src.app.models.food_nutrient import FoodNutrient
+from src.app.schemas.food import OptimizedFoodRecommendation
 from src.app.schemas.nutrient import (
     NutrientGapResponse,
     NutrientInfo,
@@ -348,6 +349,117 @@ class NutrientService:
             raise ValueError(
                 f"Failed to recommend foods high in '{nutrient_column}': {e}"
             )
+
+    @staticmethod
+    async def recommend_optimized_food(
+        db: AsyncSession,
+        nutrient_column: str,
+        target_amount: float,
+        current_amount: float = 0.0,
+        limit: int = 10,
+    ) -> List[OptimizedFoodRecommendation]:
+        """Recommend foods with nutrient values optimized to fill a specific nutrient gap.
+
+        This method finds foods that contain amounts of the specified nutrient that
+        would most efficiently help reach the target amount without excessive consumption.
+        It calculates how many servings of each food would be needed to reach the target
+        and prioritizes foods that can satisfy the gap with reasonable serving sizes.
+
+        Args:
+            db: Database session
+            nutrient_column: The nutrient column name to optimize for
+            target_amount: The target amount of the nutrient to reach
+            current_amount: The current amount of the nutrient already consumed
+            limit: Maximum number of food recommendations to return
+
+        Returns:
+            List of optimized food recommendations with gap satisfaction information
+
+        Raises:
+            ValueError: If there's an error or the nutrient column is invalid
+        """
+        try:
+            # Calculate the nutrient gap
+            nutrient_gap = target_amount - current_amount
+            if nutrient_gap <= 0:
+                # If gap is already met or exceeded, return empty list
+                return []
+
+            # First, get a larger set of foods containing this nutrient
+            # We'll get more than we need so we can find the most optimal ones
+            all_foods = await food_nutrient_crud.get_food_by_nutrient(
+                db=db, nutrient_column=nutrient_column, limit=limit * 5
+            )
+
+            if not all_foods:
+                return []
+
+            # Process foods to calculate the amount needed and find optimal matches
+            optimized_foods = []
+
+            for food_data in all_foods:
+                # Extract the nutrient value for the specified column
+                nutrient_value = food_data["nutrient_value"]
+                if nutrient_value <= 0:
+                    continue  # Skip foods without this nutrient
+
+                # Calculate how much of this food would be needed to meet the gap
+                # For simplicity, assuming 100g or serving of each food
+                amount_needed = (
+                    nutrient_gap / nutrient_value
+                ) * 100  # 100g as base unit
+
+                # Calculate what percentage of the gap this food satisfies with one serving (100g)
+                gap_satisfaction_percentage = (nutrient_value / nutrient_gap) * 100
+
+                # Create an optimized food recommendation
+                optimized_food = {
+                    "id": food_data["id"],
+                    "food_name": food_data["food_name"],
+                    "food_category": food_data["food_category"],
+                    "nutrient_value": nutrient_value,
+                    "nutrients": food_data["nutrients"],
+                    "amount_needed": amount_needed,
+                    "gap_satisfaction_percentage": gap_satisfaction_percentage,
+                }
+
+                optimized_foods.append(OptimizedFoodRecommendation(**optimized_food))
+
+            # Sort foods by how close their amount_needed is to a reasonable serving size
+            # We want to prioritize foods where a single or few servings are enough
+            # A "reasonable" serving might be 100-200g for most foods
+
+            # First, define what makes a food optimal for this purpose:
+            # 1. Foods requiring 50-200g (0.5-2 servings) are most convenient
+            # 2. Foods with very small amounts needed (<50g) may be impractical to measure
+            # 3. Foods requiring large amounts (>200g) might be excessive for one meal
+
+            def optimization_score(food):
+                amt = food.amount_needed
+                # Score is highest (1.0) when amount is exactly 100g, and decreases as it moves away
+                if 50 <= amt <= 200:
+                    # Foods requiring 50-200g get highest scores
+                    # 100g is ideal (score=1.0), 50g and 200g are good (score=0.75)
+                    return 1.0 - (abs(100 - amt) / 200)
+                elif amt < 50:
+                    # Small amounts get lower scores, with very small amounts scoring lowest
+                    return max(0.1, amt / 100)
+                else:  # amt > 200
+                    # Large amounts get progressively lower scores
+                    return max(0.1, 1.0 - ((amt - 200) / 1000))
+
+            # Sort by our optimization score (higher is better)
+            optimized_foods.sort(key=optimization_score, reverse=True)
+
+            # Return the top results
+            return optimized_foods[:limit]
+
+        except ValueError as e:
+            print(f"[ERROR] Failed to optimize food recommendations: {e}")
+            raise ValueError(f"Failed to optimize food recommendations: {str(e)}")
+        except Exception as e:
+            print(f"[ERROR] Unexpected error in food optimization: {e}")
+            raise ValueError(f"Unexpected error in food optimization: {str(e)}")
 
 
 # Create a singleton instance
