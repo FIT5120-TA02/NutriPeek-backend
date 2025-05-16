@@ -29,6 +29,7 @@ class SeasonalFoodBase(BaseModel):
     )
     season: Season = Field(..., description="General season category")
     month: str = Field(..., description="Specific month when the food is in season")
+    db_category: str = Field(..., description="Database category of the food")
 
 
 class SeasonalFoodCreate(SeasonalFoodBase):

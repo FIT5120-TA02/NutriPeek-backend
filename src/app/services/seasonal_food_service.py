@@ -53,6 +53,7 @@ class SeasonalFoodService:
                 id=item.id,
                 name=item.food_name,
                 category=item.category,
+                db_category=item.db_category,
                 region=item.region,
                 season=item.season,
                 month=item.month,

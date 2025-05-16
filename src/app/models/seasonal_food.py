@@ -13,6 +13,7 @@ class SeasonalFood(Base, UUIDMixin, TimestampMixin):
         id: Primary key for the seasonal food entry
         food_name: Name of the food item
         category: Category of the food (e.g., fruit, vegetable)
+        db_category: Database category of the food (e.g., apple, banana)
         region: Geographic region where the food is in season
         season: General season category (Spring, Summer, Autumn, Winter)
         month: Specific month when the food is in season
@@ -22,6 +23,7 @@ class SeasonalFood(Base, UUIDMixin, TimestampMixin):
 
     food_name = Column(String, nullable=False, index=True)
     category = Column(String, nullable=False, index=True)
+    db_category = Column(String, nullable=False, index=True, default="")
     region = Column(String, nullable=False, index=True)
     season = Column(
         Enum("Spring", "Summer", "Autumn", "Winter", name="season_enum"),
