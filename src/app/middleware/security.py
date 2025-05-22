@@ -68,8 +68,13 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         """
         response = await call_next(request)
 
+        # Skip applying CSP for API documentation paths
+        path = request.url.path
+        api_doc_paths = ["/api/docs", "/api/redoc", "/api/openapi.json"]
+        is_api_docs = any(path.startswith(doc_path) for doc_path in api_doc_paths)
+
         # Add Content-Security-Policy header
-        if self.csp_directives:
+        if self.csp_directives and not is_api_docs:
             csp_header = self._build_csp_header()
             response.headers["Content-Security-Policy"] = csp_header
 
@@ -105,10 +110,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         """
         return {
             "default-src": ["'self'"],
-            "script-src": ["'self'"],
-            "style-src": ["'self'"],
-            "img-src": ["'self'", "data:"],
-            "font-src": ["'self'"],
+            "script-src": ["'self'", "'unsafe-inline'", "cdn.jsdelivr.net"],
+            "style-src": ["'self'", "'unsafe-inline'", "cdn.jsdelivr.net"],
+            "img-src": ["'self'", "data:", "fastapi.tiangolo.com"],
+            "font-src": ["'self'", "cdn.jsdelivr.net"],
             "connect-src": ["'self'"],
             "frame-src": ["'none'"],
             "object-src": ["'none'"],
