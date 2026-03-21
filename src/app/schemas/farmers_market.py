@@ -85,3 +85,29 @@ class FarmersMarketListResponse(BaseModel):
 
     items: List[FarmersMarketResponse]
     total: int = Field(..., description="Total number of farmers markets")
+
+
+class NearbyFarmersMarketResponse(BaseModel):
+    """Schema for a farmers market returned from Google Places API."""
+
+    place_id: str = Field(..., description="Google Places unique ID")
+    name: str = Field(..., description="Name of the farmers market")
+    address: Optional[str] = Field(None, description="Formatted address")
+    latitude: float = Field(..., description="Latitude coordinate")
+    longitude: float = Field(..., description="Longitude coordinate")
+    rating: Optional[float] = Field(None, description="Google rating (0-5)")
+    user_rating_count: Optional[int] = Field(
+        None, description="Number of Google reviews"
+    )
+    opening_hours: Optional[List[str]] = Field(
+        None, description="Weekday opening hours descriptions"
+    )
+    website: Optional[str] = Field(None, description="Website URL")
+    phone: Optional[str] = Field(None, description="Phone number")
+
+
+class NearbyFarmersMarketListResponse(BaseModel):
+    """Schema for listing nearby popular farmers markets from Google Places."""
+
+    items: List[NearbyFarmersMarketResponse]
+    total: int = Field(..., description="Number of markets returned")

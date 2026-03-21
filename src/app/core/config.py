@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     # QR Code settings
     QR_CODE_BASE_URL: str = "https://nutripeek.pro"
 
+    # Google Places API
+    GOOGLE_PLACES_API_KEY: Optional[str] = None
+
     # Set model_config to use the appropriate env file
     model_config = SettingsConfigDict(
         case_sensitive=True,
